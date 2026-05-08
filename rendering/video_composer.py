@@ -4,6 +4,7 @@ Handles both landscape (main video) and vertical (Shorts).
 """
 
 import os
+import math
 import logging
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -155,11 +156,22 @@ def compose_main_video(story: dict, audio_path: str,
                 caption_chunks, i * scene_dur,
             )
         else:
-            # Gradient fallback
-            from phase2_video.stock_footage import make_gradient_frame
-            arr = np.array([make_gradient_frame(t, scene.get("search_keywords", []), scene_dur)
-                            for _ in [0]])[0]
-            clip = VideoClip(lambda t: arr, duration=scene_dur).with_fps(FPS)
+            # Gradient fallback — animated dark gradient
+            keywords = scene.get("search_keywords", [])
+            colors   = {"florida": (255, 140, 0), "police": (30, 30, 150),
+                        "alligator": (20, 120, 20), "fire": (200, 50, 0)}
+            color    = next((v for k, v in colors.items()
+                             if any(k in kw.lower() for kw in keywords)), (40, 40, 80))
+            def _grad(t, c=color, d=scene_dur):
+                pulse = 0.85 + 0.15 * abs(math.sin(math.pi * t / d))
+                frame = np.zeros((H, W, 3), dtype=np.uint8)
+                for row in range(H):
+                    r = int(c[0] * pulse * (1 - row / H) * 0.6)
+                    g = int(c[1] * pulse * (1 - row / H) * 0.6)
+                    b = int(c[2] * pulse * (0.3 + 0.7 * row / H))
+                    frame[row] = [r, g, b]
+                return frame
+            clip = VideoClip(_grad, duration=scene_dur).with_fps(FPS)
         scene_clips.append(clip)
 
     intro      = make_intro_card(story.get("youtube_title", story["title"]))
