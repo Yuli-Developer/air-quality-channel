@@ -10,7 +10,10 @@ Usage:
 
 import os, sys, time, logging
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Always run from the project root regardless of how the script is invoked
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+os.chdir(PROJECT_ROOT)
+sys.path.insert(0, PROJECT_ROOT)
 os.makedirs("logs", exist_ok=True)
 
 logging.basicConfig(
@@ -24,6 +27,23 @@ logging.basicConfig(
 logger = logging.getLogger("batch")
 
 from pipeline.orchestrator import run_full_pipeline
+from storage.database import init_db
+
+
+def _reset_used_stories():
+    """Reset used flag so fresh stories are always discovered each daily run."""
+    import sqlite3
+    from config.settings import DB_PATH
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("UPDATE stories SET used=0")
+        conn.commit()
+        count = conn.execute("SELECT COUNT(*) FROM stories").fetchone()[0]
+        conn.close()
+        logger.info(f"Reset {count} stories to unused for fresh daily run")
+    except Exception as e:
+        logger.warning(f"Could not reset stories: {e}")
+
 
 def run_batch(n: int = 10, upload: bool = True):
     results = []
@@ -32,6 +52,9 @@ def run_batch(n: int = 10, upload: bool = True):
     print(f"\n{'='*60}")
     print(f"BATCH RUN — {n} videos | upload={upload}")
     print(f"{'='*60}\n")
+
+    init_db()
+    _reset_used_stories()
 
     for i in range(1, n + 1):
         print(f"\n{'─'*60}")
