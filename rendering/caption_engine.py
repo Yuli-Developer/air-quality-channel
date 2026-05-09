@@ -14,7 +14,7 @@ from config.settings import AUDIO_DIR, VIDEO_WIDTH as W, VIDEO_HEIGHT as H
 
 logger = logging.getLogger(__name__)
 
-VOICE = "en-US-GuyNeural"
+VOICE = "en-GB-RyanNeural"
 CAPTION_Y_RATIO = 0.80      # vertical position of captions
 FONT_SIZE       = 80
 GAP             = 24
