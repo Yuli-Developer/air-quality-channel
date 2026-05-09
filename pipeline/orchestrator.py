@@ -20,7 +20,7 @@ from publishing.platform_adapter  import publish_all_platforms
 from analytics.collector          import collect_and_store
 from analytics.feedback_loop      import analyze_and_improve, get_optimized_style
 from storage.database             import init_db, save_story, mark_used, save_run, update_run
-from config.settings              import STORIES_PER_RUN
+from config.settings              import STORIES_PER_RUN, SHORTS_ONLY
 
 logger = logging.getLogger(__name__)
 
@@ -80,34 +80,43 @@ def run_full_pipeline(
         logger.info("Step 4: Generating anime storyboard images...")
         generate_all_images(story, run_id)
 
-        # ── 5. Voiceover + captions (main) ────────────────────────────────
-        logger.info("Step 5a: Generating main voiceover + captions...")
-        audio_path, _, caption_chunks = prepare_voiceover(story["narration"], run_id)
-        story["audio_path"]     = audio_path
-        story["caption_chunks"] = caption_chunks
+        # ── 5. Voiceover + captions ───────────────────────────────────────
+        if SHORTS_ONLY:
+            # Single audio track — narration IS the shorts narration
+            logger.info("Step 5: Generating Shorts voiceover + captions...")
+            s_audio, _, s_chunks = prepare_voiceover(story["narration"], run_id, suffix="_shorts")
+            story["shorts_audio_path"]     = s_audio
+            story["shorts_caption_chunks"] = s_chunks
+            audio_path = s_audio
+        else:
+            logger.info("Step 5a: Generating main voiceover + captions...")
+            audio_path, _, caption_chunks = prepare_voiceover(story["narration"], run_id)
+            story["audio_path"]     = audio_path
+            story["caption_chunks"] = caption_chunks
 
-        # ── 5b. Shorts voiceover ──────────────────────────────────────────
-        shorts_narration = story.get("shorts_narration", "")
-        if shorts_narration:
-            logger.info("Step 5b: Generating Shorts voiceover...")
-            s_audio, _, s_chunks = prepare_voiceover(shorts_narration, run_id, suffix="_shorts")
-            story["shorts_audio_path"]       = s_audio
-            story["shorts_caption_chunks"]   = s_chunks
+            shorts_narration = story.get("shorts_narration", "")
+            if shorts_narration:
+                logger.info("Step 5b: Generating Shorts voiceover...")
+                s_audio, _, s_chunks = prepare_voiceover(shorts_narration, run_id, suffix="_shorts")
+                story["shorts_audio_path"]     = s_audio
+                story["shorts_caption_chunks"] = s_chunks
 
         # ── 6. Music ──────────────────────────────────────────────────────
         logger.info("Step 6: Getting background music...")
         music_path = get_music_track()
 
-        # ── 7. Compose main video ─────────────────────────────────────────
-        logger.info("Step 7: Composing main video...")
-        compose_main_video(story, audio_path, music_path, run_id)
-
-        # ── 7b. Compose Shorts ────────────────────────────────────────────
-        if story.get("shorts_audio_path"):
-            logger.info("Step 7b: Composing Shorts video...")
+        # ── 7. Compose video ──────────────────────────────────────────────
+        if SHORTS_ONLY:
+            logger.info("Step 7: Composing Shorts video (portrait 9:16)...")
             compose_shorts(story, story["shorts_audio_path"], music_path, run_id)
+        else:
+            logger.info("Step 7: Composing main video...")
+            compose_main_video(story, audio_path, music_path, run_id)
+            if story.get("shorts_audio_path"):
+                logger.info("Step 7b: Composing Shorts video...")
+                compose_shorts(story, story["shorts_audio_path"], music_path, run_id)
 
-        # ── 8. Generate & score thumbnails ────────────────────────────────
+        # ── 8. Thumbnails ─────────────────────────────────────────────────
         logger.info("Step 8: Generating & scoring 4 thumbnail variants...")
         generate_thumbnails(story, run_id)
 
@@ -120,34 +129,36 @@ def run_full_pipeline(
         }
 
         if upload:
-            logger.info("Step 9a: Publishing to YouTube...")
-            yt_id = publish_main(story, run_id)
-            if yt_id:
-                result["youtube_url"]      = story.get("youtube_video_url")
-                result["youtube_video_id"] = yt_id
+            if not SHORTS_ONLY:
+                logger.info("Step 9a: Publishing main video to YouTube...")
+                yt_id = publish_main(story, run_id)
+                if yt_id:
+                    result["youtube_url"]      = story.get("youtube_video_url")
+                    result["youtube_video_id"] = yt_id
 
             if story.get("shorts_path"):
-                logger.info("Step 9b: Publishing Shorts...")
+                logger.info("Step 9b: Publishing Shorts to YouTube...")
                 yt_shorts_id = publish_shorts(story, run_id)
                 if yt_shorts_id:
                     result["shorts_url"]      = story.get("shorts_video_url")
                     result["shorts_video_id"] = yt_shorts_id
 
-            logger.info("Step 9c: Publishing to other platforms...")
-            platform_results = publish_all_platforms(
-                story, run_id,
-                skip_tiktok=skip_tiktok,
-                skip_instagram=skip_instagram,
-            )
-            result.update(platform_results)
+            if not SHORTS_ONLY:
+                logger.info("Step 9c: Publishing to other platforms...")
+                platform_results = publish_all_platforms(
+                    story, run_id,
+                    skip_tiktok=skip_tiktok,
+                    skip_instagram=skip_instagram,
+                )
+                result.update(platform_results)
 
             mark_used(story["url"])
 
-            # ── 10. Collect analytics (delayed — fire and forget) ──────────
-            if result.get("youtube_video_id"):
-                logger.info("Step 10: Queuing analytics collection (24h delay)...")
-                # Collect immediately for baseline (will be near-zero)
-                collect_and_store(run_id, result["youtube_video_id"], "youtube")
+            # ── 10. Analytics ──────────────────────────────────────────────
+            vid_id = result.get("shorts_video_id") or result.get("youtube_video_id")
+            if vid_id:
+                logger.info("Step 10: Collecting baseline analytics...")
+                collect_and_store(run_id, vid_id, "youtube")
 
         update_run(run_id,
                    youtube_url=result.get("youtube_url", ""),

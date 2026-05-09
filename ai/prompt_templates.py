@@ -30,6 +30,51 @@ Short punchy sentences. Lots of "wait for it." "No way." "This is insane."
 Think: if Red Bull wrote news scripts.""",
 }
 
+SHORTS_SCRIPT_PROMPT = """
+{system_prompt}
+
+Write a YouTube Shorts video package for this weird financial news story.
+CRITICAL: This is Shorts-only. Max 55 seconds. Max 130 words narration. Hook in first 3 words.
+
+Title: {title}
+Summary: {summary}
+URL: {url}
+Narrator style: {style}
+
+Return ONLY valid JSON (no markdown):
+{{
+  "youtube_title": "<punchy title under 55 chars — curiosity gap, no clickbait>",
+  "hook": "<first sentence, 10 words max, immediate hook>",
+  "narration": "<STRICT max 130 words, {style} tone, structure: 1-sentence hook → 2-sentence setup → twist → 1-line payoff. Every word earns its place. No filler.>",
+  "title_variants": [
+    "<title variant 1 — curiosity>",
+    "<title variant 2 — shock>",
+    "<title variant 3 — humor>",
+    "<title variant 4 — ragebait>"
+  ],
+  "characters": "<visual description of 1-2 key characters for consistent image generation, include age, clothing, expression>",
+  "scenes": [
+    {{
+      "scene_number": 1,
+      "narration_segment": "<exact words for this scene, ~30 words>",
+      "storyboard_description": "<VERTICAL 9:16 portrait composition. Subject centered and tall in frame. Close-up or medium shot preferred. Financial news broadcast aesthetic. Describe: subject, action, background, lighting, emotion>",
+      "motion_effect": "<ken_burns_zoom_in|ken_burns_zoom_out|pan_left|pan_right>",
+      "search_keywords": ["<keyword1>", "<keyword2>"]
+    }}
+  ],
+  "tags": ["<tag1>", "<tag2>", "<tag3>", "<tag4>", "<tag5>", "<tag6>", "<tag7>"],
+  "description_hook": "<2 punchy lines for YouTube description>"
+}}
+
+Requirements:
+- Exactly 4 scenes
+- Total narration MUST be under 130 words — count carefully
+- Each scene narration ~25-35 words
+- storyboard_description must specify VERTICAL 9:16 portrait framing
+- Tags must include: finance, money, shorts, investing, weirdnews
+- Deadpan underreaction tone — let absurdity speak for itself
+"""
+
 SCRIPT_PROMPT = """
 {system_prompt}
 

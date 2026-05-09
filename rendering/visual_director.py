@@ -115,7 +115,7 @@ FINANCE_BOOSTERS = [
 ]
 
 
-def _build_finance_prompt(scene: dict, characters: str) -> str:
+def _build_finance_prompt(scene: dict, characters: str, portrait: bool = False) -> str:
     """Build prompt using the master finance news template."""
     scene_num   = scene.get("scene_number", 1)
     desc        = scene.get("storyboard_description", scene.get("narration_segment", ""))
@@ -135,8 +135,17 @@ def _build_finance_prompt(scene: dict, characters: str) -> str:
     rng      = random.Random(scene_num * 7)
     boosters = ", ".join(rng.sample(FINANCE_BOOSTERS, 6))
 
+    # Portrait-specific composition keywords for 9:16 Shorts
+    composition = (
+        "VERTICAL 9:16 PORTRAIT COMPOSITION, tall narrow frame, "
+        "subject centered and dominant in frame, close-up or medium shot, "
+        "optimized for mobile phone full screen vertical viewing, "
+        "no important content in top or bottom 15% of frame, "
+    ) if portrait else ""
+
     return (
         f"{FINANCE_NEWS_BASE}, "
+        f"{composition}"
         f'BREAKING NEWS: "{headline}", '
         f"scene showing {desc}, "
         f"financial chaos and market panic atmosphere, people reacting emotionally, "
@@ -153,9 +162,10 @@ def _build_finance_prompt(scene: dict, characters: str) -> str:
     )
 
 
-def _build_prompt(scene: dict, characters: str, shot_type: str, style: str = "anime") -> str:
+def _build_prompt(scene: dict, characters: str, shot_type: str,
+                  style: str = "anime", portrait: bool = False) -> str:
     if style == "news_broadcast":
-        return _build_finance_prompt(scene, characters)
+        return _build_finance_prompt(scene, characters, portrait=portrait)
     # Anime default
     desc = scene.get("storyboard_description", scene.get("narration_segment", ""))
     return (
@@ -279,19 +289,18 @@ def _gradient_fallback(path: str, scene_num: int, width: int, height: int):
 
 def generate_scene_image(scene: dict, run_id: str, characters: str = "",
                           width: int = 1792, height: int = 1024,
-                          style: str = "anime") -> str:
+                          style: str = "anime", portrait: bool = False) -> str:
     os.makedirs(IMAGES_DIR, exist_ok=True)
     scene_num = scene["scene_number"]
     path = os.path.join(IMAGES_DIR, f"{run_id}_scene_{scene_num:02d}.png")
 
     shot_type = SHOT_TYPES[(scene_num - 1) % len(SHOT_TYPES)]
-    prompt    = _build_prompt(scene, characters, shot_type, style)
+    prompt    = _build_prompt(scene, characters, shot_type, style, portrait)
     seed      = scene_num * 42
 
-    logger.info(f"Scene {scene_num}: {shot_type}")
+    logger.info(f"Scene {scene_num}: {shot_type} {'[portrait]' if portrait else ''}")
 
-    success = False
-
+    success  = False
     negative = FINANCE_NEWS_NEGATIVE if style == "news_broadcast" else ""
 
     if USE_COMFYUI or IMAGE_TIER == "comfyui":
@@ -308,12 +317,21 @@ def generate_scene_image(scene: dict, run_id: str, characters: str = "",
 
 def generate_all_images(story: dict, run_id: str,
                          width: int = 1792, height: int = 1024) -> list[str]:
-    characters  = story.get("characters", "")
-    style       = story.get("visual_style", "anime")
+    characters   = story.get("characters", "")
+    style        = story.get("visual_style", "anime")
+    shorts_only  = story.get("shorts_only", False)
+
+    # Shorts-only: generate portrait 9:16 images natively
+    if shorts_only:
+        width, height = 1080, 1920
+        portrait = True
+    else:
+        portrait = False
+
     image_paths = []
 
     for scene in story["scenes"]:
-        path = generate_scene_image(scene, run_id, characters, width, height, style)
+        path = generate_scene_image(scene, run_id, characters, width, height, style, portrait)
         image_paths.append(path)
         time.sleep(15)   # avoid 429 rate limits on Pollinations free tier
 

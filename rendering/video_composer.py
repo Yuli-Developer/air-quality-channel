@@ -231,16 +231,21 @@ def compose_shorts(story: dict, shorts_audio_path: str,
     logger.info(f"Composing Shorts: {n_scenes} scenes × {scene_dur:.1f}s")
 
     def _make_vertical(image_path: str, duration: float) -> VideoClip:
-        """Crop landscape image to vertical 9:16 center crop."""
+        """Resize image to 9:16. Portrait images are resized directly; landscape images are center-cropped."""
         img = Image.open(image_path).convert("RGB")
         iw, ih = img.size
-        target_w = int(ih * SW / SH)
-        if target_w > iw:
-            target_w = iw
-        x_off = (iw - target_w) // 2
-        img   = img.crop((x_off, 0, x_off + target_w, ih))
-        img   = img.resize((SW, SH), Image.LANCZOS)
-        arr   = np.array(img)
+        if ih > iw:
+            # Already portrait — just resize to target (1080x1920)
+            img = img.resize((SW, SH), Image.LANCZOS)
+        else:
+            # Landscape — center crop to 9:16
+            target_w = int(ih * SW / SH)
+            if target_w > iw:
+                target_w = iw
+            x_off = (iw - target_w) // 2
+            img   = img.crop((x_off, 0, x_off + target_w, ih))
+            img   = img.resize((SW, SH), Image.LANCZOS)
+        arr = np.array(img)
         return VideoClip(lambda t: arr, duration=duration).with_fps(FPS)
 
     clips = []

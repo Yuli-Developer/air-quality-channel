@@ -42,7 +42,9 @@ IMAGE_TIER            = os.getenv("IMAGE_TIER", "pollinations")   # comfyui | po
 STORIES_PER_RUN       = int(os.getenv("STORIES_PER_RUN", "1"))
 TOP_STORIES_POOL      = int(os.getenv("TOP_STORIES_POOL", "30"))
 MIN_VIRAL_SCORE       = float(os.getenv("MIN_VIRAL_SCORE", "6.0"))
-SCENES_PER_VIDEO      = int(os.getenv("SCENES_PER_VIDEO", "7"))
+SCENES_PER_VIDEO      = int(os.getenv("SCENES_PER_VIDEO", "4"))   # Shorts = 4 scenes
+SHORTS_ONLY           = os.getenv("SHORTS_ONLY", "true").lower() == "true"
+MAX_SHORTS_WORDS      = int(os.getenv("MAX_SHORTS_WORDS", "130"))  # ~55s at Ryan pace
 
 # ── Video ──────────────────────────────────────────────────────────────────
 VIDEO_WIDTH           = 1920
