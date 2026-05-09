@@ -66,19 +66,71 @@ DB_PATH               = os.getenv("DB_PATH", "data/breaking_weird.db")
 NARRATOR_STYLES = ["deadpan", "horror_documentary", "sarcastic", "investigative", "hyper_tiktok"]
 DEFAULT_STYLE   = os.getenv("NARRATOR_STYLE", "deadpan")
 
-# ── Subreddits ─────────────────────────────────────────────────────────────
+# ── Finance subreddits (weird / funny / interesting money stories) ──────────
 REDDIT_SUBREDDITS = [
-    "nottheonion", "FloridaMan", "WeirdNews",
-    "mildlyinfuriating", "tifu", "Whatcouldgowrong",
-    "HumansBeingBros", "therewasanattempt",
+    "wallstreetbets",       # meme stocks, insane gains/losses, YOLO trades
+    "Superstonk",           # GME drama and market manipulation stories
+    "personalfinance",      # bizarre real-life money situations
+    "investing",            # unusual market events and discoveries
+    "stocks",               # weird stock movements and corporate chaos
+    "financialindependence",# accidental millionaire, early retirement stories
+    "povertyfinance",       # ironic, absurd financial situations
+    "thetagang",            # options weirdness
+    "CryptoCurrency",       # crypto pump/dump, lost fortunes, weird events
+    "Superstonk",           # short squeeze drama
+    "StockMarket",          # breaking unusual market news
+    "dividends",            # surprisingly weird dividend stories
+    "Economics",            # bizarre economic events
+    "business",             # corporate oddities and financial scandals
 ]
 
-# ── RSS feeds ──────────────────────────────────────────────────────────────
+# ── Finance RSS feeds — major financial news sites ──────────────────────────
 RSS_FEEDS = [
-    "https://www.boredpanda.com/feed/",
+    # Wire services / major outlets
+    "https://feeds.reuters.com/reuters/businessNews",
+    "https://feeds.marketwatch.com/marketwatch/topstories/",
+    "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+    "https://www.cnbc.com/id/10000664/device/rss/rss.html",   # CNBC investing
+    # Yahoo Finance
+    "https://finance.yahoo.com/rss/2.0/headline?s=^GSPC&region=US&lang=en-US",
+    "https://finance.yahoo.com/news/rssindex",
+    # Business press
+    "https://feeds.businessinsider.com/custom/all",
+    "https://www.forbes.com/business/feed/",
+    "https://fortune.com/feed",
+    # Niche / analysis
+    "https://seekingalpha.com/feed.xml",
+    "https://feeds.feedburner.com/zerohedge/feed",
+    "https://www.fool.com/feeds/index.aspx",
+    # Hacker News finance discussions
+    "https://hnrss.org/frontpage?q=finance+money+stock+investing",
+    # Oddly enough / viral finance
     "https://feeds.reuters.com/reuters/oddlyEnoughNews",
-    "https://www.theguardian.com/world/rss",
-    "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+    "https://qz.com/feed",
+]
+
+# ── Keywords to identify weird/funny/interesting finance stories ─────────────
+FINANCE_WEIRD_KEYWORDS = [
+    # Accidental wealth
+    "accidentally", "forgot", "forgotten", "mistake", "error", "by accident",
+    "didn't know", "found out", "discovered", "woke up",
+    # Scale/extremes
+    "million", "billion", "trillion", "zero", "bankrupt", "broke",
+    "lost everything", "gained", "surged", "crashed", "collapsed", "record",
+    "all-time high", "all-time low", "first ever", "never before",
+    # Weird behaviour
+    "bizarre", "strange", "weird", "unusual", "unexpected", "shocking",
+    "unbelievable", "insane", "wild", "crazy", "baffling", "absurd",
+    "hilarious", "ridiculous", "outrageous",
+    # People/drama
+    "sued", "arrested", "fired", "quit", "resigned", "fraud", "scam",
+    "ponzi", "stolen", "hacked", "glitch", "bug",
+    # Meme finance
+    "meme stock", "short squeeze", "yolo", "apes", "stonks", "reddit",
+    "memecoin", "pump", "dump", "diamond hands", "to the moon",
+    # Irony/contrast
+    "despite", "somehow", "still", "anyway", "yet", "while",
+    "meanwhile", "at the same time",
 ]
 
 # ── Viral score weights ────────────────────────────────────────────────────

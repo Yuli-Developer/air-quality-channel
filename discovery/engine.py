@@ -1,12 +1,23 @@
 """
-Trend Discovery Engine — parallel async scraping from all sources.
-Deduplicates, normalizes, and returns a ranked story pool.
+Finance Discovery Engine — scrapes only weird/funny/strange/interesting
+financial news from Reddit finance communities, major financial news sites,
+and financial discussion forums.
+
+Sources:
+  - Reddit: r/wallstreetbets, r/personalfinance, r/investing, r/stocks,
+            r/CryptoCurrency, r/Superstonk, r/financialindependence, etc.
+  - RSS:    Reuters Business, MarketWatch, CNBC, Yahoo Finance, Bloomberg,
+            Forbes, Fortune, Seeking Alpha, ZeroHedge, Motley Fool,
+            Business Insider, Hacker News finance, Quartz
+  - Scraped: MarketWatch, Yahoo Finance headline lists
+
+All stories must pass FINANCE_WEIRD_KEYWORDS filter before entering the pool.
 """
 
 import asyncio
 import logging
 from datetime import datetime
-from storage.database import is_duplicate, save_story
+from storage.database import is_duplicate
 
 logger = logging.getLogger(__name__)
 
@@ -22,27 +33,25 @@ async def _safe(coro, label: str) -> list:
 
 
 async def discover_stories(limit_per_source: int = 15) -> list[dict]:
-    """Run all scrapers in parallel and return deduplicated story pool."""
-
-    from discovery.reddit_source    import fetch_reddit_async
-    from discovery.rss_source       import fetch_rss_async
-    from discovery.youtube_trending import fetch_youtube_trending_async
-    from discovery.google_trends    import fetch_google_trends_async
+    """
+    Run all finance scrapers in parallel.
+    Returns a deduplicated pool of weird/interesting finance stories.
+    """
+    from discovery.reddit_source       import fetch_reddit_async
+    from discovery.finance_news_source import fetch_finance_news_async
 
     results = await asyncio.gather(
-        _safe(fetch_reddit_async(limit_per_source),    "Reddit"),
-        _safe(fetch_rss_async(limit_per_source),       "RSS"),
-        _safe(fetch_youtube_trending_async(),           "YouTube Trending"),
-        _safe(fetch_google_trends_async(),              "Google Trends"),
+        _safe(fetch_reddit_async(limit_per_source),       "Reddit Finance"),
+        _safe(fetch_finance_news_async(limit_per_source), "Finance News Sites"),
     )
 
     raw = []
     for batch in results:
         raw.extend(batch)
 
-    # Deduplicate by URL hash against DB and within this batch
+    # Deduplicate within batch and against DB
     seen_urls = set()
-    stories = []
+    stories   = []
     for s in raw:
         url = s.get("url", "")
         if not url or url in seen_urls:
@@ -52,18 +61,22 @@ async def discover_stories(limit_per_source: int = 15) -> list[dict]:
         seen_urls.add(url)
         stories.append(_normalize(s))
 
-    logger.info(f"Discovery complete: {len(stories)} unique new stories")
+    # Sort by upvotes (Reddit signal) descending
+    stories.sort(key=lambda x: x.get("upvotes", 0), reverse=True)
+
+    logger.info(f"Finance discovery complete: {len(stories)} unique weird finance stories")
     return stories
 
 
 def _normalize(s: dict) -> dict:
     """Ensure all stories have a consistent schema."""
     return {
-        "title":     s.get("title", "").strip(),
-        "url":       s.get("url", "").strip(),
-        "summary":   s.get("summary", s.get("title", "")).strip(),
-        "source":    s.get("source", "unknown"),
-        "upvotes":   s.get("upvotes", 0),
+        "title":      s.get("title", "").strip(),
+        "url":        s.get("url", "").strip(),
+        "summary":    s.get("summary", s.get("title", "")).strip(),
+        "source":     s.get("source", "unknown"),
+        "upvotes":    s.get("upvotes", 0),
+        "category":   s.get("category", "finance"),
         "fetched_at": datetime.utcnow().isoformat(),
     }
 
