@@ -12,7 +12,7 @@ from moviepy import (
     VideoClip, AudioFileClip, CompositeAudioClip,
     concatenate_videoclips, concatenate_audioclips,
 )
-from rendering.motion_engine import apply_motion, flash_transition, speed_lines_frame
+from rendering.motion_engine import apply_motion, flash_transition, speed_lines_frame, make_animated_portrait
 from rendering.caption_engine import draw_captions
 from config.settings import (
     VIDEO_DIR, SHORTS_DIR, FPS,
@@ -230,29 +230,34 @@ def compose_shorts(story: dict, shorts_audio_path: str,
 
     logger.info(f"Composing Shorts: {n_scenes} scenes × {scene_dur:.1f}s")
 
-    def _make_vertical(image_path: str, duration: float) -> VideoClip:
-        """Resize image to 9:16. Portrait images are resized directly; landscape images are center-cropped."""
-        img = Image.open(image_path).convert("RGB")
-        iw, ih = img.size
-        if ih > iw:
-            # Already portrait — just resize to target (1080x1920)
-            img = img.resize((SW, SH), Image.LANCZOS)
-        else:
-            # Landscape — center crop to 9:16
-            target_w = int(ih * SW / SH)
-            if target_w > iw:
-                target_w = iw
-            x_off = (iw - target_w) // 2
-            img   = img.crop((x_off, 0, x_off + target_w, ih))
-            img   = img.resize((SW, SH), Image.LANCZOS)
-        arr = np.array(img)
-        return VideoClip(lambda t: arr, duration=duration).with_fps(FPS)
+    # Headline for ticker bar (first sentence of narration)
+    narration = story.get("narration", "")
+    headline  = narration.split(".")[0].strip() if narration else story.get("youtube_title", "")
 
     clips = []
     for i, scene in enumerate(shorts_scenes):
         idx = scene.get("scene_number", i + 1) - 1
-        if idx < len(image_paths) and os.path.exists(image_paths[idx]):
-            clip = _make_vertical(image_paths[idx], scene_dur)
+
+        # Check if Kling video clip exists for this scene
+        kling_paths = story.get("kling_video_paths", {})
+        if str(idx) in kling_paths and os.path.exists(kling_paths[str(idx)]):
+            from moviepy import VideoFileClip
+            kling_clip = VideoFileClip(kling_paths[str(idx)])
+            # Trim or loop to match scene duration
+            if kling_clip.duration < scene_dur:
+                reps = int(scene_dur / kling_clip.duration) + 1
+                kling_clip = concatenate_videoclips([kling_clip] * reps).subclipped(0, scene_dur)
+            else:
+                kling_clip = kling_clip.subclipped(0, scene_dur)
+            clip = kling_clip
+            logger.info(f"Scene {i+1}: using Kling video clip")
+        elif idx < len(image_paths) and os.path.exists(image_paths[idx]):
+            clip = make_animated_portrait(
+                image_paths[idx], scene_dur,
+                scene_index=i, headline=headline,
+                canvas_w=SW, canvas_h=SH,
+            )
+            logger.info(f"Scene {i+1}: animated portrait [{['zoom_in','zoom_out','pan_right','pan_left','zoom_burst','parallax'][i % 6]}]")
         else:
             blank = np.zeros((SH, SW, 3), dtype=np.uint8)
             clip  = VideoClip(lambda t: blank, duration=scene_dur).with_fps(FPS)

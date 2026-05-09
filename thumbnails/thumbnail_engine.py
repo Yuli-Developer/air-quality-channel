@@ -4,19 +4,16 @@ auto-selects the highest CTR thumbnail.
 """
 
 import os
-import json
+import re
 import math
 import random
 import logging
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
-from google import genai
-from config.settings import THUMB_DIR, GEMINI_API_KEY, GEMINI_MODEL
-from ai.prompt_templates import THUMBNAIL_PROMPT
+from config.settings import THUMB_DIR
 from storage.database import save_thumbnail_scores
 
 logger = logging.getLogger(__name__)
-client = genai.Client(api_key=GEMINI_API_KEY)
 
 W, H = 1280, 720
 
@@ -204,48 +201,68 @@ def _render_thumbnail(image_paths: list, title_text: str,
     return path
 
 
-def _ai_score_thumbnails(thumbnails_meta: list[dict], story: dict) -> list[dict]:
-    """Use Gemini to score each thumbnail concept."""
-    prompt = THUMBNAIL_PROMPT.format(
-        title=story.get("youtube_title", story["title"]),
-        hook=story.get("hook", ""),
-        summary=story.get("summary", ""),
-        top_scene=story.get("scenes", [{}])[3].get("storyboard_description", "") if len(story.get("scenes", [])) > 3 else "",
-    )
-    try:
-        resp = client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
-        raw  = resp.text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        concepts = json.loads(raw.strip()).get("thumbnails", [])
+_CTR_KEYWORDS = [
+    "%", "million", "billion", "crashed", "surged", "record", "accidentally",
+    "shocked", "insane", "wild", "bizarre", "broke", "fortune", "overnight",
+    "all-time", "nobody", "secret", "revealed", "you won't", "how",
+]
 
-        for i, t in enumerate(thumbnails_meta):
-            if i < len(concepts):
-                c = concepts[i]
-                t["ctr_score"]    = random.uniform(7.0, 9.5)   # AI estimate placeholder
-                t["emotion_score"] = {"shock": 9, "curiosity": 8, "anger": 7,
-                                      "laughter": 8, "disgust": 7}.get(
-                    c.get("emotion", "curiosity"), 7.5)
-                t["readability"]  = 8.5
-                t["mobile_score"] = 8.0
-                t["total_score"]  = (
-                    t["ctr_score"] * 0.40 +
-                    t["emotion_score"] * 0.30 +
-                    t["readability"] * 0.15 +
-                    t["mobile_score"] * 0.15
-                )
-                t["ai_concept"]   = c
-    except Exception as e:
-        logger.warning(f"AI thumbnail scoring failed: {e}")
-        for i, t in enumerate(thumbnails_meta):
-            t["ctr_score"]    = 7.0
-            t["emotion_score"] = 7.0
-            t["readability"]  = 7.5
-            t["mobile_score"] = 7.5
-            t["total_score"]  = 7.2
+_EMOTION_KEYWORDS = {
+    "shock":     ["shocked", "unbelievable", "impossible", "nobody expected", "crashed"],
+    "curiosity": ["why", "how", "secret", "hidden", "nobody knew", "turns out"],
+    "anger":     ["ceo", "bonus", "billionaire", "fraud", "scam", "while workers"],
+    "laughter":  ["potato", "accidentally", "wrong", "glitch", "duck", "squirrel"],
+}
 
+# Theme performance weights — red/yellow (v1) historically highest CTR
+_THEME_BOOST = [0.8, 0.4, 0.6, 0.5]
+
+
+def _score_title(title: str) -> dict:
+    """Rule-based thumbnail scoring — no API calls."""
+    title_lower = title.lower()
+
+    # CTR score: keyword hits + number presence + ideal length
+    ctr_hits  = sum(1 for kw in _CTR_KEYWORDS if kw in title_lower)
+    has_num   = bool(re.search(r'\d', title))
+    length_ok = 4 <= len(title.split()) <= 8   # ideal title word count
+    ctr_score = min(10.0, 6.0 + ctr_hits * 0.8 + (1.0 if has_num else 0) + (0.5 if length_ok else 0))
+
+    # Emotion score: detect dominant emotion
+    emotion_scores = {}
+    for emotion, keywords in _EMOTION_KEYWORDS.items():
+        emotion_scores[emotion] = sum(1 for kw in keywords if kw in title_lower)
+    top_emotion   = max(emotion_scores, key=emotion_scores.get)
+    emotion_score = min(10.0, 7.0 + emotion_scores[top_emotion] * 0.8)
+
+    # Readability: shorter titles read better on mobile
+    words        = len(title.split())
+    readability  = 10.0 if words <= 5 else (8.5 if words <= 7 else 7.0)
+
+    # Mobile score: uppercase words help visibility
+    upper_ratio  = sum(1 for w in title.split() if w.isupper()) / max(len(title.split()), 1)
+    mobile_score = min(10.0, 7.5 + upper_ratio * 2.0)
+
+    total = (ctr_score * 0.40 + emotion_score * 0.30 +
+             readability * 0.15 + mobile_score * 0.15)
+
+    return {
+        "ctr_score":    round(ctr_score, 1),
+        "emotion_score": round(emotion_score, 1),
+        "readability":  round(readability, 1),
+        "mobile_score": round(mobile_score, 1),
+        "total_score":  round(total, 1),
+    }
+
+
+def _score_thumbnails(thumbnails_meta: list[dict], story: dict) -> list[dict]:
+    """Score thumbnails using rule-based logic. Zero API calls."""
+    for i, t in enumerate(thumbnails_meta):
+        scores = _score_title(t.get("title", story.get("youtube_title", "")))
+        # Apply theme boost (v1 red/yellow performs best historically)
+        boost  = _THEME_BOOST[i % len(_THEME_BOOST)]
+        scores["total_score"] = round(min(10.0, scores["total_score"] + boost), 1)
+        t.update(scores)
     return thumbnails_meta
 
 
@@ -278,8 +295,8 @@ def generate_thumbnails(story: dict, run_id: str) -> tuple[str, list[dict]]:
         })
         logger.info(f"Thumbnail v{variant+1} rendered: {path}")
 
-    # AI scoring
-    thumbnails_meta = _ai_score_thumbnails(thumbnails_meta, story)
+    # Rule-based scoring (no API calls)
+    thumbnails_meta = _score_thumbnails(thumbnails_meta, story)
 
     # Select best
     best = max(thumbnails_meta, key=lambda x: x.get("total_score", 0))

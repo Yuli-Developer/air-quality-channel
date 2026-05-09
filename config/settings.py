@@ -10,7 +10,7 @@ load_dotenv()
 
 # ── AI ─────────────────────────────────────────────────────────────────────
 GEMINI_API_KEY        = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL          = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL          = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
 # ── Sources ────────────────────────────────────────────────────────────────
 REDDIT_CLIENT_ID      = os.getenv("REDDIT_CLIENT_ID", "")
@@ -37,11 +37,13 @@ USE_REDIS             = os.getenv("USE_REDIS", "false").lower() == "true"
 COMFYUI_URL           = os.getenv("COMFYUI_URL", "http://localhost:8188")
 USE_COMFYUI           = os.getenv("USE_COMFYUI", "false").lower() == "true"
 IMAGE_TIER            = os.getenv("IMAGE_TIER", "pollinations")   # comfyui | pollinations
+AIMLAPI_KEY           = os.getenv("AIMLAPI_KEY", "")
+USE_KLING             = os.getenv("USE_KLING", "false").lower() == "true"
 
 # ── Pipeline ───────────────────────────────────────────────────────────────
 STORIES_PER_RUN       = int(os.getenv("STORIES_PER_RUN", "1"))
 TOP_STORIES_POOL      = int(os.getenv("TOP_STORIES_POOL", "30"))
-MIN_VIRAL_SCORE       = float(os.getenv("MIN_VIRAL_SCORE", "6.0"))
+MIN_VIRAL_SCORE       = float(os.getenv("MIN_VIRAL_SCORE", "3.0"))
 SCENES_PER_VIDEO      = int(os.getenv("SCENES_PER_VIDEO", "4"))   # Shorts = 4 scenes
 SHORTS_ONLY           = os.getenv("SHORTS_ONLY", "true").lower() == "true"
 MAX_SHORTS_WORDS      = int(os.getenv("MAX_SHORTS_WORDS", "130"))  # ~55s at Ryan pace

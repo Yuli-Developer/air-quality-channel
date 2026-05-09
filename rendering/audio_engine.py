@@ -82,14 +82,17 @@ def _generate_jingle(path: str, duration: float = 60.0) -> str:
     return wav_path
 
 
+DEFAULT_TRACK = "cinematic_tensions.mp3"
+
+
 def get_music_track() -> str | None:
     os.makedirs(MUSIC_DIR, exist_ok=True)
 
-    for fname in os.listdir(MUSIC_DIR):
-        fpath = os.path.join(MUSIC_DIR, fname)
-        if fname.endswith((".mp3", ".wav")) and os.path.getsize(fpath) > 5000:
-            logger.info(f"Using cached music: {fname}")
-            return fpath
+    # Always prefer the configured default track
+    default_path = os.path.join(MUSIC_DIR, DEFAULT_TRACK)
+    if os.path.exists(default_path) and os.path.getsize(default_path) > 5000:
+        logger.info(f"Using music: {DEFAULT_TRACK}")
+        return default_path
 
     for track in TRACKS:
         path = os.path.join(MUSIC_DIR, f"{track['name']}.mp3")

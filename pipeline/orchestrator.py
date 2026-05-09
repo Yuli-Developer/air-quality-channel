@@ -11,6 +11,7 @@ from discovery.engine       import run_discovery
 from prediction.viral_scorer import score_and_rank
 from ai.narrative_generator  import generate_script
 from rendering.visual_director import generate_all_images
+from rendering.kling_engine    import generate_all_kling_videos
 from rendering.caption_engine  import prepare_voiceover
 from rendering.audio_engine    import get_music_track
 from rendering.video_composer  import compose_main_video, compose_shorts
@@ -76,9 +77,12 @@ def run_full_pipeline(
         logger.info(f"Step 3: Generating {style} script...")
         story = generate_script(story, style=style)
 
-        # ── 4. Generate anime storyboard images ───────────────────────────
-        logger.info("Step 4: Generating anime storyboard images...")
+        # ── 4. Generate images + optional Kling video clips ──────────────
+        logger.info("Step 4: Generating storyboard images...")
         generate_all_images(story, run_id)
+
+        logger.info("Step 4b: Generating Kling AI video clips (if enabled)...")
+        generate_all_kling_videos(story, run_id)
 
         # ── 5. Voiceover + captions ───────────────────────────────────────
         if SHORTS_ONLY:
