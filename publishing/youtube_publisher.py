@@ -16,6 +16,17 @@ logger = logging.getLogger(__name__)
 
 # ── Tags ────────────────────────────────────────────────────────────────────
 
+def _trim_tags(tags: list) -> list:
+    """YouTube enforces 500 total characters across all tags."""
+    result, total = [], 0
+    for t in tags:
+        t = t.replace('#', '').strip()
+        if t and total + len(t) + 1 <= 498:
+            result.append(t)
+            total += len(t) + 1
+    return result
+
+
 FINANCE_TAGS = [
     # Channel
     "the odd investor", "theoddinvestor", "odd investor",
@@ -100,7 +111,7 @@ def publish_main(story: dict, run_id: str) -> str | None:
 
     youtube = _get_service()
     title   = story.get("youtube_title", story["title"])[:100]
-    tags    = story.get("tags", []) + FINANCE_TAGS
+    tags    = _trim_tags(story.get("tags", []) + FINANCE_TAGS)
 
     description = _build_description(story)
 
@@ -108,7 +119,7 @@ def publish_main(story: dict, run_id: str) -> str | None:
         "snippet": {
             "title":           title,
             "description":     description,
-            "tags":            tags[:500],
+            "tags":            tags,
             "categoryId":      "25",
             "defaultLanguage": "en",
         },
@@ -141,13 +152,13 @@ def publish_shorts(story: dict, run_id: str) -> str | None:
 
     youtube = _get_service()
     title   = f"{story.get('youtube_title', story['title'])[:90]} #Shorts"
-    tags    = story.get("tags", []) + FINANCE_TAGS + SHORTS_TAGS
+    tags    = _trim_tags(story.get("tags", []) + FINANCE_TAGS + SHORTS_TAGS)
 
     body = {
         "snippet": {
             "title":           title,
             "description":     _build_description(story, is_shorts=True),
-            "tags":            tags[:500],
+            "tags":            tags,
             "categoryId":      "25",
             "defaultLanguage": "en",
         },
