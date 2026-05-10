@@ -23,7 +23,7 @@ from config.settings import (
 
 logger = logging.getLogger(__name__)
 
-CHANNEL_NAME = "BREAKING WEIRD"
+CHANNEL_NAME = "THE ODD INVESTOR"
 
 
 def _font(size: int) -> ImageFont.FreeTypeFont:

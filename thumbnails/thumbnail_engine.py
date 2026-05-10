@@ -144,7 +144,7 @@ def _render_thumbnail(image_paths: list, title_text: str,
     # Channel badge
     bf = _font(28)
     draw.rectangle([20, 20, 230, 60], fill=theme["accent"])
-    draw.text((125, 40), "BREAKING WEIRD", font=bf, fill="white", anchor="mm")
+    draw.text((125, 40), "THE ODD INVESTOR", font=bf, fill="white", anchor="mm")
 
     # !! badge
     ef = _font(52)
@@ -187,7 +187,7 @@ def _render_thumbnail(image_paths: list, title_text: str,
     draw.rectangle([0, H-50, W, H], fill=theme["accent"])
     sbar_f = _font(24)
     draw.text((W//2, H-25),
-              "SUBSCRIBE  •  NEW EPISODE DAILY  •  BREAKING WEIRD",
+              "SUBSCRIBE  •  NEW EPISODE DAILY  •  THE ODD INVESTOR",
               font=sbar_f, fill="white", anchor="mm")
 
     # Corner marks

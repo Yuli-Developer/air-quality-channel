@@ -33,12 +33,12 @@ def run_full_pipeline(
     skip_instagram: bool = True,
 ) -> dict:
     """
-    Run the complete Breaking Weird v2 pipeline for one video.
+    Run the complete The Odd Investor v2 pipeline for one video.
     Returns a result dict with URLs and metrics.
     """
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     logger.info(f"{'='*60}")
-    logger.info(f"Breaking Weird v2 — Pipeline run: {run_id}")
+    logger.info(f"The Odd Investor v2 — Pipeline run: {run_id}")
     logger.info(f"{'='*60}")
 
     init_db()

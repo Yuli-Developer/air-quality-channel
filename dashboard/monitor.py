@@ -18,7 +18,7 @@ def _line(char="─", width=60):
 
 def show_dashboard():
     _line("═")
-    print(f"  BREAKING WEIRD v2 — Dashboard  [{datetime.now().strftime('%Y-%m-%d %H:%M')}]")
+    print(f"  THE ODD INVESTOR v2 — Dashboard  [{datetime.now().strftime('%Y-%m-%d %H:%M')}]")
     _line("═")
 
     # Queue

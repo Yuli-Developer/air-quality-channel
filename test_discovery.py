@@ -14,7 +14,7 @@ from discovery.engine import run_discovery
 init_db()
 
 print("\n" + "="*60)
-print("BREAKING WEIRD — Finance Discovery Engine Test")
+print("THE ODD INVESTOR — Finance Discovery Engine Test")
 print("="*60)
 
 stories = run_discovery(limit_per_source=10)

@@ -164,7 +164,7 @@ Return ONLY valid JSON:
   ]
 }}"""
 
-FEEDBACK_PROMPT = """You are an AI content strategist analyzing performance data for "Breaking Weird" YouTube channel.
+FEEDBACK_PROMPT = """You are an AI content strategist analyzing performance data for "The Odd Investor" YouTube channel.
 
 Recent video performance data:
 {analytics_data}
