@@ -14,6 +14,31 @@ from config.settings import YOUTUBE_CLIENT_SECRETS, YOUTUBE_TOKEN_PATH
 
 logger = logging.getLogger(__name__)
 
+# ── Tags ────────────────────────────────────────────────────────────────────
+
+FINANCE_TAGS = [
+    # Channel
+    "the odd investor", "theoddinvestor", "odd investor",
+    # Finance general
+    "finance", "investing", "stock market", "stocks", "money",
+    "personal finance", "financial news", "market news",
+    "wall street", "trading", "investor", "wealth",
+    # Weird finance niche
+    "weird finance", "bizarre market", "funny finance",
+    "strange investing", "wtf finance", "market madness",
+    "financial fails", "accidental millionaire",
+    # Viral finance
+    "meme stocks", "get rich", "financial freedom",
+    "money mistakes", "market crash", "stock crash",
+    "crypto news", "bitcoin news", "finance explained",
+]
+
+SHORTS_TAGS = [
+    "shorts", "youtubeshorts", "shortsvideo",
+    "financeshorts", "moneytips", "investingshorts",
+    "stockmarketshorts", "financefacts", "moneyshorts",
+]
+
 SCOPES = [
     "https://www.googleapis.com/auth/youtube.upload",
     "https://www.googleapis.com/auth/youtube",
@@ -75,10 +100,7 @@ def publish_main(story: dict, run_id: str) -> str | None:
 
     youtube = _get_service()
     title   = story.get("youtube_title", story["title"])[:100]
-    tags    = story.get("tags", []) + [
-        "breaking weird", "weird news", "funny news",
-        "strange news", "wtf news", "anime news",
-    ]
+    tags    = story.get("tags", []) + FINANCE_TAGS
 
     description = _build_description(story)
 
@@ -87,7 +109,7 @@ def publish_main(story: dict, run_id: str) -> str | None:
             "title":           title,
             "description":     description,
             "tags":            tags[:500],
-            "categoryId":      "24",
+            "categoryId":      "25",
             "defaultLanguage": "en",
         },
         "status": {
@@ -119,17 +141,14 @@ def publish_shorts(story: dict, run_id: str) -> str | None:
 
     youtube = _get_service()
     title   = f"{story.get('youtube_title', story['title'])[:90]} #Shorts"
-    tags    = story.get("tags", []) + [
-        "shorts", "breakingweird", "weird news shorts",
-        "funny shorts", "wtf shorts", "#shorts",
-    ]
+    tags    = story.get("tags", []) + FINANCE_TAGS + SHORTS_TAGS
 
     body = {
         "snippet": {
             "title":           title,
             "description":     _build_description(story, is_shorts=True),
             "tags":            tags[:500],
-            "categoryId":      "24",
+            "categoryId":      "25",
             "defaultLanguage": "en",
         },
         "status": {
@@ -161,7 +180,8 @@ def _build_description(story: dict, is_shorts: bool = False) -> str:
 {source_url}
 
 ---
-New episode every day. Subscribe so you never miss a story.
+The Odd Investor — weird finance stories that actually happened.
+New video every day. Subscribe so you never miss a story.
 
-#BreakingWeird #WeirdNews #FunnyNews #StrangeButTrue #WTFNews #AnimeNews
+#TheOddInvestor #WeirdFinance #StockMarket #Investing #Finance #MoneyNews #WallStreet #FinanceFacts #WTFFinance #StrangeButTrue #FinancialNews #Stocks #MoneyTips #InvestingTips #FinanceShorts
 """
