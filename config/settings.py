@@ -1,5 +1,5 @@
 """
-Central configuration for Breaking Weird v2.
+Central configuration for The Odd Investor channel.
 All settings driven by environment variables with sane defaults.
 """
 
