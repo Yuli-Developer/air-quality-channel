@@ -9,7 +9,7 @@ import random
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 from moviepy import VideoClip
-from config.settings import VIDEO_WIDTH as W, VIDEO_HEIGHT as H, FPS
+from config.settings import SHORTS_WIDTH as W, SHORTS_HEIGHT as H, FPS
 
 
 # ── Ken Burns ──────────────────────────────────────────────────────────────

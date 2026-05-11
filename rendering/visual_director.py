@@ -1,7 +1,7 @@
 """
 Visual Director — AQI channel.
-Generates city skyline images using Pollinations.ai (free Flux model).
-Style: photorealistic smoggy/clear city skyline matching AQI level.
+Style: combination of Style 1 (NASA satellite/aerial) + Style 4 (NatGeo documentary ground level).
+Alternates per scene: odd scenes = satellite view, even scenes = ground documentary.
 """
 
 import os
@@ -15,26 +15,42 @@ logger = logging.getLogger(__name__)
 
 W, H = SHORTS_WIDTH, SHORTS_HEIGHT   # 1080 x 1920
 
-_SKY_STYLE = {
-    "Good":               "crystal clear blue sky, pristine air, golden sunlight",
-    "Moderate":           "slightly hazy pale sky, soft diffused light",
-    "Unhealthy for Some": "hazy orange-tinted sky, smog layer visible",
-    "Unhealthy":          "heavy smog, orange-red hazy atmosphere, reduced visibility",
-    "Very Unhealthy":     "thick toxic smog, dark orange purple haze, apocalyptic atmosphere",
-    "Hazardous":          "extreme toxic smog, dark red brown sky, barely visible skyline, horror atmosphere",
-}
-
-AQI_STYLE_BASE = (
-    "ultra realistic cinematic photography, "
-    "city skyline aerial view, NO people, NO faces, "
-    "photorealistic environment, dramatic atmospheric perspective, "
-    "8k UHD, sharp focus, cinematic depth of field, "
-    "VERTICAL 9:16 portrait composition, tall narrow frame"
+AQI_NEGATIVE = (
+    "cartoon, anime, painting, illustration, people faces, human face, portrait, "
+    "text, watermark, logo, low quality, blurry, distorted, ugly, bad anatomy"
 )
 
-AQI_NEGATIVE = (
-    "cartoon, anime, painting, illustration, people, faces, human, "
-    "text, watermark, logo, low quality, blurry, distorted"
+# Sky/smog description per AQI level
+_SKY_STYLE = {
+    "Good":               "crystal clear blue sky, pristine clean air, golden sunlight, beautiful visibility",
+    "Moderate":           "slightly hazy pale sky, light smog layer, soft diffused golden light",
+    "Unhealthy for Some": "orange-tinted hazy sky, visible smog layer, reduced visibility, dusty atmosphere",
+    "Unhealthy":          "thick orange-red smog, heavy pollution haze, dramatic reduced visibility, toxic air",
+    "Very Unhealthy":     "dense toxic smog, dark orange-purple apocalyptic haze, barely visible skyline",
+    "Hazardous":          "extreme dark red-brown toxic smog blanket, apocalyptic visibility near zero, emergency atmosphere",
+}
+
+# Style 1: NASA satellite / high aerial — dramatic smog from above
+SATELLITE_BASE = (
+    "NASA satellite photography style, aerial view from very high altitude, "
+    "looking down at city from above clouds, thick brown-orange smog blanket clearly visible, "
+    "earth observation satellite image, atmospheric pollution haze, "
+    "photorealistic aerial photography, dramatic top-down perspective, "
+    "pollution cloud visible from space altitude, cinematic scale, "
+    "NO people, NO faces, environment only, "
+    "VERTICAL 9:16 portrait composition"
+)
+
+# Style 4: National Geographic documentary ground level — silhouettes in smog
+DOCUMENTARY_BASE = (
+    "National Geographic environmental documentary photography, "
+    "ground level street view, dramatic smoggy morning atmosphere, "
+    "silhouette of city skyline barely visible through thick haze, "
+    "orange toxic sun diffused through pollution layer, "
+    "moody atmospheric photojournalism, award-winning environmental photography, "
+    "NO faces visible, silhouettes and shadows only, "
+    "cinematic film grain, dramatic chiaroscuro lighting, "
+    "VERTICAL 9:16 portrait composition"
 )
 
 
@@ -43,19 +59,32 @@ def _build_aqi_prompt(scene: dict) -> str:
     category = scene.get("category", "Moderate")
     sky      = _SKY_STYLE.get(category, "hazy sky")
     aqi      = scene.get("aqi", 100)
-    drama = ""
+    scene_num = scene.get("scene_number", 1)
+
+    # Alternate styles: odd = satellite, even = documentary
+    if scene_num % 2 == 1:
+        base = SATELLITE_BASE
+        style_note = f"satellite view over {city}, {sky}, thick pollution haze visible from above"
+    else:
+        base = DOCUMENTARY_BASE
+        style_note = f"street scene of {city}, {sky}, dramatic pollution atmosphere"
+
+    # Extra drama for high AQI
     if aqi > 200:
-        drama = "emergency atmosphere, hazard warning feeling, cinematic tension, "
+        drama = "emergency crisis atmosphere, apocalyptic scale, disaster photography, "
     elif aqi > 150:
-        drama = "ominous atmosphere, smog alert mood, "
+        drama = "ominous threatening atmosphere, environmental crisis, "
+    elif aqi <= 50:
+        drama = "beautiful pristine environment, clean air celebration, hopeful atmosphere, "
+    else:
+        drama = ""
+
     return (
-        f"{AQI_STYLE_BASE}, "
-        f"aerial view of {city} skyline, {sky}, "
+        f"{base}, "
+        f"{style_note}, "
         f"{drama}"
-        f"authentic city architecture of {city}, "
-        f"atmospheric air pollution visible, "
-        f"environmental documentary photography style, "
-        f"moody cinematic composition"
+        f"authentic {city} urban environment, "
+        f"environmental documentary realism"
     )
 
 
@@ -67,7 +96,7 @@ def _pollinations_generate(prompt: str, path: str, width: int, height: int, seed
         f"?width={width}&height={height}&nologo=true&model=flux"
         f"&seed={seed}&negative={negative}"
     )
-    backoffs = [30, 60, 90]
+    backoffs = [60, 90, 120]
     for attempt in range(3):
         try:
             r = requests.get(url, timeout=120)
@@ -93,7 +122,7 @@ def _fallback_card(path: str, scene: dict, width: int, height: int):
               f"{scene.get('city', 'City')}\nAQI {scene.get('aqi', '?')}",
               fill="white", anchor="mm")
     img.save(path)
-    logger.warning(f"Used fallback card for scene {scene.get('scene_number')}")
+    logger.warning(f"Used fallback for scene {scene.get('scene_number')}")
 
 
 def generate_scene_image(scene: dict, run_id: str,
@@ -103,7 +132,10 @@ def generate_scene_image(scene: dict, run_id: str,
     path      = os.path.join(IMAGES_DIR, f"{run_id}_scene_{scene_num:02d}.png")
     prompt    = _build_aqi_prompt(scene)
     seed      = scene_num * 137
-    logger.info(f"Generating image for {scene.get('city')} (AQI {scene.get('aqi')})")
+
+    style_name = "satellite" if scene_num % 2 == 1 else "documentary"
+    logger.info(f"Scene {scene_num} [{style_name}]: {scene.get('city')} AQI {scene.get('aqi')}")
+
     success = _pollinations_generate(prompt, path, width, height, seed)
     if not success:
         _fallback_card(path, scene, width, height)
@@ -120,7 +152,7 @@ def generate_all_images(story: dict, run_id: str,
         scene["date"] = story.get("date", "")
         render_aqi_card(bg_path, scene, card_out)
         image_paths.append(card_out)
-        time.sleep(15)
+        time.sleep(35)
     story["image_paths"] = image_paths
     logger.info(f"Generated {len(image_paths)} AQI scene images")
     return image_paths

@@ -87,10 +87,10 @@ def _build_description(story: dict) -> str:
         "",
         "Data: Google Air Quality API / Open-Meteo",
         "---",
-        "Daily Air Quality Report — real-time AQI data every day.",
-        "Follow for daily updates. Stay safe.",
+        "AQI Daily — real-time air quality data for cities worldwide.",
+        "Follow @AQIDaily for daily updates. Stay safe.",
         "",
-        "#AirQuality #AQI #Pollution #AirQualityIndex #DailyAQI "
+        "#AQIDaily #AirQuality #AQI #Pollution #AirQualityIndex "
         "#AirPollution #CleanAir #Environment #AQIReport #Shorts",
     ]
     return "\n".join(lines)

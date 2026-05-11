@@ -10,7 +10,7 @@ import logging
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from moviepy import AudioFileClip
-from config.settings import AUDIO_DIR, VIDEO_WIDTH as W, VIDEO_HEIGHT as H
+from config.settings import AUDIO_DIR, SHORTS_WIDTH as W, SHORTS_HEIGHT as H
 
 logger = logging.getLogger(__name__)
 

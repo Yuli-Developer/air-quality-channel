@@ -37,6 +37,10 @@ SHORTS_WIDTH          = 1080
 SHORTS_HEIGHT         = 1920
 FPS                   = 24
 
+# ── Video encoding
+VIDEO_BITRATE         = "5000k"
+AUDIO_BITRATE         = "192k"
+
 # ── Paths ────────────────────────────────────────────────────────────────────
 OUTPUT_DIR            = os.getenv("OUTPUT_DIR", "output")
 IMAGES_DIR            = os.path.join(OUTPUT_DIR, "images")

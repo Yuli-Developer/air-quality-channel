@@ -198,8 +198,10 @@ def build_daily_report(cities: list[dict]) -> dict:
         return {}
 
     worst    = cities[0]
-    top5     = cities[:5]
-    best     = cities[-1] if len(cities) > 1 else None
+    # 7 most polluted + 3 cleanest for global contrast (worst → best ranking)
+    top7     = cities[:7]
+    bottom3  = cities[-3:] if len(cities) >= 10 else []
+    featured = top7 + bottom3
     date_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
     today    = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -211,26 +213,24 @@ def build_daily_report(cities: list[dict]) -> dict:
     )
     hook = (
         f"{worst['city']} hits AQI {worst['aqi']} — {worst['category'].upper()}! "
-        f"Here are today's most polluted cities."
+        f"10 cities ranked worst to cleanest today."
     )
 
     lines = [
-        f"Today's air quality report — {date_str}.",
-        f"The most polluted city right now is {worst['city']}, "
-        f"with an AQI of {worst['aqi']} — that's {worst['category'].lower()}. "
-        f"{worst['advice']}",
+        f"Today's world air quality report — {date_str}.",
+        f"Number one most polluted: {worst['city']}, AQI {worst['aqi']} — {worst['category']}. {worst['advice']}",
     ]
-    for i, c in enumerate(top5[1:], 2):
+    for i, c in enumerate(top7[1:], 2):
         lines.append(f"Number {i}: {c['city']}, AQI {c['aqi']} — {c['category']}.")
-    if best:
-        lines.append(
-            f"The cleanest air today? {best['city']} with AQI {best['aqi']} — {best['category']}."
-        )
-    lines.append("Follow for daily air quality updates. Stay safe out there.")
+    if bottom3:
+        lines.append("And the cleanest air today:")
+        for c in bottom3:
+            lines.append(f"{c['city']}: AQI {c['aqi']} — {c['category']}.")
+    lines.append("Follow for daily rankings. Stay safe out there.")
     narration = " ".join(lines)
 
     scenes = []
-    for i, c in enumerate(top5, 1):
+    for i, c in enumerate(featured, 1):
         scenes.append({
             "scene_number": i,
             "city":    c["city"],
@@ -244,16 +244,16 @@ def build_daily_report(cities: list[dict]) -> dict:
             "narration_segment": f"{c['city']}: AQI {c['aqi']} — {c['category']}.",
         })
 
-    city_names = [c["city"] for c in top5]
+    city_names = [c["city"] for c in featured]
     tags = (
         ["air quality", "aqi", "air pollution", "air quality today",
          "pollution", "most polluted city", "aqi report", "daily aqi",
-         "air quality index", "pollution today", "clean air", "smog"]
-        + [f"{n.lower()} air quality" for n in city_names]
-        + [f"aqi {n.lower()}" for n in city_names]
+         "air quality index", "pollution today", "clean air", "smog",
+         "world air quality", "aqi ranking", "pollution ranking"]
+        + [f"{n.lower()} air quality" for n in city_names[:7]]
+        + [f"aqi {n.lower()}" for n in city_names[:5]]
     )
 
-    # Data source credit line (shows which APIs were used)
     sources_used = list(dict.fromkeys(c["source"] for c in cities))
     source_str   = " / ".join(sources_used)
 
@@ -273,11 +273,10 @@ def build_daily_report(cities: list[dict]) -> dict:
         "tags":            tags,
         "cities":          cities,
         "worst_city":      worst,
-        "best_city":       best,
+        "best_city":       cities[-1] if cities else None,
         "date":            today,
         "title_variants":  [yt_title] * 4,
     }
-
 
 def _sky_desc(aqi: int) -> str:
     if aqi <= 50:   return "clear blue"
