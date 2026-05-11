@@ -1,6 +1,6 @@
 """
-Central configuration for The Odd Investor channel.
-All settings driven by environment variables with sane defaults.
+Air Quality Channel — configuration.
+All settings driven by environment variables.
 """
 
 import os
@@ -8,142 +8,74 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── AI ─────────────────────────────────────────────────────────────────────
+# ── AI ──────────────────────────────────────────────────────────────────────
 GEMINI_API_KEY        = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL          = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
-# ── Sources ────────────────────────────────────────────────────────────────
-REDDIT_CLIENT_ID      = os.getenv("REDDIT_CLIENT_ID", "")
-REDDIT_CLIENT_SECRET  = os.getenv("REDDIT_CLIENT_SECRET", "")
-REDDIT_USER_AGENT     = os.getenv("REDDIT_USER_AGENT", "BreakingWeirdV2/2.0")
-NEWSAPI_KEY           = os.getenv("NEWSAPI_KEY", "")
-PEXELS_API_KEY        = os.getenv("PEXELS_API_KEY", "")
+# ── Google Air Quality API ───────────────────────────────────────────────────
+GOOGLE_AQI_API_KEY    = os.getenv("GOOGLE_AQI_API_KEY", "")      # same Google project key
+AQI_API_URL           = "https://airquality.googleapis.com/v1/currentConditions:lookup"
 
-# ── YouTube ────────────────────────────────────────────────────────────────
+# ── YouTube ──────────────────────────────────────────────────────────────────
 YOUTUBE_CLIENT_SECRETS = os.getenv("YOUTUBE_CLIENT_SECRETS", "client_secrets.json")
 YOUTUBE_TOKEN_PATH     = os.getenv("YOUTUBE_TOKEN_PATH", "token.pickle")
 YOUTUBE_CHANNEL_ID     = os.getenv("YOUTUBE_CHANNEL_ID", "")
 
-# ── Publishing ─────────────────────────────────────────────────────────────
-TIKTOK_SESSION_ID     = os.getenv("TIKTOK_SESSION_ID", "")
-INSTAGRAM_USERNAME    = os.getenv("INSTAGRAM_USERNAME", "")
-INSTAGRAM_PASSWORD    = os.getenv("INSTAGRAM_PASSWORD", "")
-
-# ── Redis ──────────────────────────────────────────────────────────────────
-REDIS_URL             = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-USE_REDIS             = os.getenv("USE_REDIS", "false").lower() == "true"
-
-# ── Image Generation ───────────────────────────────────────────────────────
+# ── Image Generation ─────────────────────────────────────────────────────────
 COMFYUI_URL           = os.getenv("COMFYUI_URL", "http://localhost:8188")
 USE_COMFYUI           = os.getenv("USE_COMFYUI", "false").lower() == "true"
-IMAGE_TIER            = os.getenv("IMAGE_TIER", "pollinations")   # comfyui | pollinations
-AIMLAPI_KEY           = os.getenv("AIMLAPI_KEY", "")
-USE_KLING             = os.getenv("USE_KLING", "false").lower() == "true"
+IMAGE_TIER            = os.getenv("IMAGE_TIER", "pollinations")
 
-# ── Pipeline ───────────────────────────────────────────────────────────────
-STORIES_PER_RUN       = int(os.getenv("STORIES_PER_RUN", "1"))
-TOP_STORIES_POOL      = int(os.getenv("TOP_STORIES_POOL", "30"))
-MIN_VIRAL_SCORE       = float(os.getenv("MIN_VIRAL_SCORE", "3.0"))
-SCENES_PER_VIDEO      = int(os.getenv("SCENES_PER_VIDEO", "4"))   # Shorts = 4 scenes
-SHORTS_ONLY           = os.getenv("SHORTS_ONLY", "true").lower() == "true"
-MAX_SHORTS_WORDS      = int(os.getenv("MAX_SHORTS_WORDS", "130"))  # ~55s at Ryan pace
+# ── Pipeline ─────────────────────────────────────────────────────────────────
+SHORTS_ONLY           = True
+SCENES_PER_VIDEO      = 5          # one scene per featured city
+MAX_SHORTS_WORDS      = 140        # ~58s at moderate pace
 
-# ── Video ──────────────────────────────────────────────────────────────────
-VIDEO_WIDTH           = 1920
-VIDEO_HEIGHT          = 1080
+# ── Video ────────────────────────────────────────────────────────────────────
 SHORTS_WIDTH          = 1080
 SHORTS_HEIGHT         = 1920
 FPS                   = 24
-VIDEO_BITRATE         = "5000k"
-AUDIO_BITRATE         = "192k"
 
-# ── Paths ──────────────────────────────────────────────────────────────────
+# ── Paths ────────────────────────────────────────────────────────────────────
 OUTPUT_DIR            = os.getenv("OUTPUT_DIR", "output")
 IMAGES_DIR            = os.path.join(OUTPUT_DIR, "images")
 AUDIO_DIR             = os.path.join(OUTPUT_DIR, "audio")
 VIDEO_DIR             = os.path.join(OUTPUT_DIR, "videos")
 SHORTS_DIR            = os.path.join(OUTPUT_DIR, "shorts")
 THUMB_DIR             = os.path.join(OUTPUT_DIR, "thumbnails")
-DB_PATH               = os.getenv("DB_PATH", "data/breaking_weird.db")
+DB_PATH               = os.getenv("DB_PATH", "data/airquality.db")
 
-# ── Narrator styles ────────────────────────────────────────────────────────
-NARRATOR_STYLES = ["deadpan", "horror_documentary", "sarcastic", "investigative", "hyper_tiktok"]
-DEFAULT_STYLE   = os.getenv("NARRATOR_STYLE", "deadpan")
-
-# ── Finance subreddits (weird / funny / interesting money stories) ──────────
-REDDIT_SUBREDDITS = [
-    "wallstreetbets",       # meme stocks, insane gains/losses, YOLO trades
-    "Superstonk",           # GME drama and market manipulation stories
-    "personalfinance",      # bizarre real-life money situations
-    "investing",            # unusual market events and discoveries
-    "stocks",               # weird stock movements and corporate chaos
-    "financialindependence",# accidental millionaire, early retirement stories
-    "povertyfinance",       # ironic, absurd financial situations
-    "thetagang",            # options weirdness
-    "CryptoCurrency",       # crypto pump/dump, lost fortunes, weird events
-    "Superstonk",           # short squeeze drama
-    "StockMarket",          # breaking unusual market news
-    "dividends",            # surprisingly weird dividend stories
-    "Economics",            # bizarre economic events
-    "business",             # corporate oddities and financial scandals
+# ── Cities to monitor ────────────────────────────────────────────────────────
+# (lat, lon, display_name, country_code)
+MONITORED_CITIES = [
+    (28.6139,  77.2090, "Delhi",      "IN"),
+    (39.9042, 116.4074, "Beijing",    "CN"),
+    (19.0760,  72.8777, "Mumbai",     "IN"),
+    (31.5204,  74.3587, "Lahore",     "PK"),
+    (23.8103,  90.4125, "Dhaka",      "BD"),
+    (24.8607,  67.0011, "Karachi",    "PK"),
+    (40.7128, -74.0060, "New York",   "US"),
+    (34.0522,-118.2437, "Los Angeles","US"),
+    (51.5074,  -0.1278, "London",     "GB"),
+    (48.8566,   2.3522, "Paris",      "FR"),
+    (35.6762, 139.6503, "Tokyo",      "JP"),
+    (37.5665, 126.9780, "Seoul",      "KR"),
+    (55.7558,  37.6173, "Moscow",     "RU"),
+    (-23.5505, -46.6333,"São Paulo",  "BR"),
+    (30.0444,  31.2357, "Cairo",      "EG"),
+    (1.3521,  103.8198, "Singapore",  "SG"),
+    (25.2048,  55.2708, "Dubai",      "AE"),
+    (13.7563, 100.5018, "Bangkok",    "TH"),
+    (3.1390,  101.6869, "Kuala Lumpur","MY"),
+    (-33.8688, 151.2093,"Sydney",     "AU"),
 ]
 
-# ── Finance RSS feeds — major financial news sites ──────────────────────────
-RSS_FEEDS = [
-    # Wire services / major outlets
-    "https://feeds.reuters.com/reuters/businessNews",
-    "https://feeds.marketwatch.com/marketwatch/topstories/",
-    "https://www.cnbc.com/id/100003114/device/rss/rss.html",
-    "https://www.cnbc.com/id/10000664/device/rss/rss.html",   # CNBC investing
-    # Yahoo Finance
-    "https://finance.yahoo.com/rss/2.0/headline?s=^GSPC&region=US&lang=en-US",
-    "https://finance.yahoo.com/news/rssindex",
-    # Business press
-    "https://feeds.businessinsider.com/custom/all",
-    "https://www.forbes.com/business/feed/",
-    "https://fortune.com/feed",
-    # Niche / analysis
-    "https://seekingalpha.com/feed.xml",
-    "https://feeds.feedburner.com/zerohedge/feed",
-    "https://www.fool.com/feeds/index.aspx",
-    # Hacker News finance discussions
-    "https://hnrss.org/frontpage?q=finance+money+stock+investing",
-    # Oddly enough / viral finance
-    "https://feeds.reuters.com/reuters/oddlyEnoughNews",
-    "https://qz.com/feed",
+# ── AQI Categories ───────────────────────────────────────────────────────────
+AQI_CATEGORIES = [
+    (0,   50,  "Good",             "#00E400", "Air quality is satisfactory."),
+    (51,  100, "Moderate",         "#FFFF00", "Acceptable, but some pollutants may concern sensitive people."),
+    (101, 150, "Unhealthy for Some","#FF7E00","Sensitive groups may experience health effects."),
+    (151, 200, "Unhealthy",        "#FF0000", "Everyone may experience health effects."),
+    (201, 300, "Very Unhealthy",   "#8F3F97", "Health alert: serious effects for everyone."),
+    (301, 500, "Hazardous",        "#7E0023", "Emergency conditions. Avoid all outdoor activity."),
 ]
-
-# ── Keywords to identify weird/funny/interesting finance stories ─────────────
-FINANCE_WEIRD_KEYWORDS = [
-    # Accidental wealth
-    "accidentally", "forgot", "forgotten", "mistake", "error", "by accident",
-    "didn't know", "found out", "discovered", "woke up",
-    # Scale/extremes
-    "million", "billion", "trillion", "zero", "bankrupt", "broke",
-    "lost everything", "gained", "surged", "crashed", "collapsed", "record",
-    "all-time high", "all-time low", "first ever", "never before",
-    # Weird behaviour
-    "bizarre", "strange", "weird", "unusual", "unexpected", "shocking",
-    "unbelievable", "insane", "wild", "crazy", "baffling", "absurd",
-    "hilarious", "ridiculous", "outrageous",
-    # People/drama
-    "sued", "arrested", "fired", "quit", "resigned", "fraud", "scam",
-    "ponzi", "stolen", "hacked", "glitch", "bug",
-    # Meme finance
-    "meme stock", "short squeeze", "yolo", "apes", "stonks", "reddit",
-    "memecoin", "pump", "dump", "diamond hands", "to the moon",
-    # Irony/contrast
-    "despite", "somehow", "still", "anyway", "yet", "while",
-    "meanwhile", "at the same time",
-]
-
-# ── Viral score weights ────────────────────────────────────────────────────
-VIRAL_WEIGHTS = {
-    "curiosity": 0.20,
-    "thumbnail_strength": 0.20,
-    "ragebait": 0.10,
-    "retention_potential": 0.20,
-    "comment_potential": 0.10,
-    "shareability": 0.10,
-    "shorts_potential": 0.10,
-}
