@@ -12,8 +12,9 @@ load_dotenv()
 GEMINI_API_KEY        = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL          = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
-# ── Google Air Quality API ───────────────────────────────────────────────────
+# ── Air Quality APIs ───────────────────────────────────────────────────
 GOOGLE_AQI_API_KEY    = os.getenv("GOOGLE_AQI_API_KEY", "")      # same Google project key
+WAQI_TOKEN            = os.getenv("WAQI_TOKEN", "")              # free: https://aqicn.org/api/
 AQI_API_URL           = "https://airquality.googleapis.com/v1/currentConditions:lookup"
 
 # ── YouTube ──────────────────────────────────────────────────────────────────
