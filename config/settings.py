@@ -10,7 +10,7 @@ load_dotenv()
 
 # ── AI ─────────────────────────────────────────────────────────────────────
 GEMINI_API_KEY        = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL          = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL          = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 # ── Sources ────────────────────────────────────────────────────────────────
 REDDIT_CLIENT_ID      = os.getenv("REDDIT_CLIENT_ID", "")

@@ -5,6 +5,7 @@ Handles OAuth2, resumable uploads, thumbnail setting, playlist management.
 
 import os
 import pickle
+import re
 import logging
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
@@ -17,31 +18,23 @@ logger = logging.getLogger(__name__)
 # ── Tags ────────────────────────────────────────────────────────────────────
 
 def _trim_tags(tags: list) -> list:
-    """YouTube enforces 500 total characters across all tags."""
+    """YouTube enforces 500 total characters across all tags. Max 30 chars per tag."""
     result, total = [], 0
     for t in tags:
-        t = t.replace('#', '').strip()
-        if t and total + len(t) + 1 <= 498:
+        t = re.sub(r'[^\w\s\-\.]', '', t.replace('#', '')).strip()
+        if not t or len(t) > 30:
+            continue
+        if total + len(t) + 1 <= 498:
             result.append(t)
             total += len(t) + 1
     return result
 
 
 FINANCE_TAGS = [
-    # Channel
-    "the odd investor", "theoddinvestor", "odd investor",
-    # Finance general
-    "finance", "investing", "stock market", "stocks", "money",
-    "personal finance", "financial news", "market news",
-    "wall street", "trading", "investor", "wealth",
-    # Weird finance niche
-    "weird finance", "bizarre market", "funny finance",
-    "strange investing", "wtf finance", "market madness",
-    "financial fails", "accidental millionaire",
-    # Viral finance
-    "meme stocks", "get rich", "financial freedom",
-    "money mistakes", "market crash", "stock crash",
-    "crypto news", "bitcoin news", "finance explained",
+    "the odd investor", "finance", "investing", "stock market",
+    "stocks", "money", "financial news", "wall street",
+    "trading", "weird finance", "funny finance", "financial fails",
+    "get rich", "financial freedom", "money mistakes",
 ]
 
 SHORTS_TAGS = [

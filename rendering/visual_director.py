@@ -64,19 +64,20 @@ FINANCE_NEWS_NEGATIVE = (
     "plastic skin, text errors, watermark, logo, typo, poor composition, pixelated, "
     "low detail, jpeg artifacts, overprocessed, unrealistic reflections, weird shadows, "
     "incorrect body proportions, out of frame, cropped face, stock image quality, "
-    "boring scene, static composition, childish, toy-like, low realism"
+    "boring scene, static composition, childish, toy-like, low realism, "
+    "human face, person, people, portrait, face, close up face, man, woman, human"
 )
 
 FINANCE_CAMERA_ANGLES = [
-    "close-up dramatic face shot",
-    "wide angle newsroom shot",
+    "wide angle newsroom shot, no people",
     "aerial view of financial district",
-    "low angle power shot",
-    "cinematic over-the-shoulder shot",
-    "handheld breaking news realism",
-    "zoomed-in emotional reaction shot",
-    "ultra wide cinematic frame",
-    "security camera perspective",
+    "low angle power shot of skyscrapers",
+    "wide cinematic shot of trading floor screens",
+    "overhead shot of financial data screens",
+    "wide establishing shot of stock exchange building",
+    "dramatic wide shot of market data displays",
+    "ultra wide cinematic frame of city skyline",
+    "security camera perspective of empty trading floor",
     "helicopter shot over stock exchange",
 ]
 
@@ -148,15 +149,14 @@ def _build_finance_prompt(scene: dict, characters: str, portrait: bool = False) 
         f"{composition}"
         f'BREAKING NEWS: "{headline}", '
         f"scene showing {desc}, "
-        f"financial chaos and market panic atmosphere, people reacting emotionally, "
-        f"traders shocked, stock market graphics collapsing or exploding, "
+        f"financial data screens, stock market graphics collapsing or exploding, "
         f"news graphics floating on screens, viral internet news energy, "
-        f"foreground details: {characters}, "
+        f"dramatic environment with financial charts and tickers, "
         f"camera angle: {camera}, "
         f"lighting: {light}, "
         f"mood: {mood}, "
-        f"realistic facial expressions, photorealistic humans, cinematic realism, "
-        f"hyper detailed environment, no text artifacts, "
+        f"NO human faces, NO people, focus on environment and data displays, "
+        f"cinematic realism, hyper detailed environment, no text artifacts, "
         f"viral finance news thumbnail composition, "
         f"{boosters}"
     )
