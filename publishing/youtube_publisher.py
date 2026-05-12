@@ -30,13 +30,16 @@ AQI_TAGS_BASE = [
 
 
 def _trim_tags(tags: list) -> list:
-    result, total = [], 0
+    seen, result, total = set(), [], 0
     for t in tags:
-        t = re.sub(r"[^\w\s\-\.]", "", t.replace("#", "")).strip()
-        if not t or len(t) > 30:
+        t = t.replace("#", "")
+        t = t.encode("ascii", "ignore").decode("ascii")
+        t = re.sub(r"[^\w\s\-]", "", t).strip().lower()
+        if not t or len(t) > 30 or t in seen:
             continue
         if total + len(t) + 1 <= 498:
             result.append(t)
+            seen.add(t)
             total += len(t) + 1
     return result
 

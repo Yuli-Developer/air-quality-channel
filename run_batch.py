@@ -6,16 +6,21 @@ Usage:
     python run_batch.py --no-upload   # run without uploading (preview)
 """
 
+import os
 import sys
 import logging
 import argparse
 
+_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(_DIR)   # ensure cron runs from the project root
+
+os.makedirs(os.path.join(_DIR, "logs"), exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("logs/aqi_pipeline.log"),
+        logging.FileHandler(os.path.join(_DIR, "logs", "aqi_pipeline.log")),
     ]
 )
 
