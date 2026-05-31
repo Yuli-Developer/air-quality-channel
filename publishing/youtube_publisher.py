@@ -8,6 +8,7 @@ import re
 import pickle
 import logging
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -31,16 +32,19 @@ AQI_TAGS_BASE = [
 
 def _trim_tags(tags: list) -> list:
     seen, result, total = set(), [], 0
-    for t in tags:
-        t = t.replace("#", "")
-        t = t.encode("ascii", "ignore").decode("ascii")
-        t = re.sub(r"[^\w\s\-]", "", t).strip().lower()
-        if not t or len(t) > 30 or t in seen:
-            continue
-        if total + len(t) + 1 <= 498:
-            result.append(t)
-            seen.add(t)
-            total += len(t) + 1
+    for raw in tags:
+        # Split on commas in case Gemini returned "tag1, tag2" as one string
+        for t in str(raw).split(","):
+            t = t.replace("#", "").strip()
+            t = t.encode("ascii", "ignore").decode("ascii")
+            t = re.sub(r"[^\w\s\-]", "", t).strip().lower()
+            t = re.sub(r"\s+", " ", t)
+            if not t or len(t) > 30 or t in seen:
+                continue
+            if total + len(t) + 1 <= 498:
+                result.append(t)
+                seen.add(t)
+                total += len(t) + 1
     return result
 
 
@@ -107,7 +111,7 @@ def publish_shorts(story: dict, run_id: str) -> str | None:
 
     youtube = _get_service()
     title   = f"{story.get('youtube_title', story['title'])[:90]} #Shorts"
-    tags    = _trim_tags(story.get("tags", []) + AQI_TAGS_BASE)
+    tags    = _trim_tags(AQI_TAGS_BASE)
 
     body = {
         "snippet": {
@@ -139,6 +143,11 @@ def publish_shorts(story: dict, run_id: str) -> str | None:
                 media_body=MediaFileUpload(thumb, mimetype="image/jpeg"),
             ).execute()
             logger.info(f"Thumbnail set for {video_id}")
+        except HttpError as e:
+            if e.resp.status == 403:
+                logger.warning("Thumbnail upload skipped: channel not eligible for custom thumbnails (403)")
+            else:
+                logger.error(f"Thumbnail upload failed: {e}")
         except Exception as e:
             logger.error(f"Thumbnail upload failed: {e}")
 
