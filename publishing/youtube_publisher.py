@@ -80,16 +80,34 @@ def _upload_video(youtube, video_path: str, body: dict) -> str:
     return response["id"]
 
 
+def _cigarettes(aqi: int) -> str:
+    """Convert AQI to cigarettes-per-day equivalent (Berkeley Earth formula)."""
+    cigs = round(aqi / 22, 1)
+    if cigs < 0.5:
+        return ""
+    return f"≈ {cigs} cigarettes/day equivalent"
+
+
 def _build_description(story: dict) -> str:
     worst  = story.get("worst_city", {})
     cities = story.get("cities", [])
     top5   = cities[:5] if cities else []
 
-    lines = [story.get("hook", ""), ""]
+    # Hook first — 2 punchy lines before "Show more"
+    hook = story.get("description_hook", story.get("hook", ""))
+    worst_aqi = worst.get("aqi", 0) if worst else 0
+    cig_line  = _cigarettes(worst_aqi)
+
+    lines = [hook, ""]
+    if cig_line:
+        lines.append(cig_line)
+        lines.append("")
     if top5:
         lines.append("TODAY'S TOP 5 MOST POLLUTED CITIES:")
         for i, c in enumerate(top5, 1):
-            lines.append(f"{i}. {c['city']} — AQI {c['aqi']} ({c['category']})")
+            c_cig = _cigarettes(c["aqi"])
+            cig_note = f"  ({c_cig})" if c_cig else ""
+            lines.append(f"{i}. {c['city']} — AQI {c['aqi']} ({c['category']}){cig_note}")
     lines += [
         "",
         "Data: Google Air Quality API / Open-Meteo",

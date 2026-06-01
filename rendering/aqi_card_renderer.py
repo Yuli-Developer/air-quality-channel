@@ -144,6 +144,15 @@ def render_aqi_card(bg_path: str, scene: dict, out_path: str) -> str:
                   fill="#DDDDDD", anchor="mm", stroke_width=3, stroke_fill="black")
         adv_y += 44
 
+    # ── Cigarettes equivalent ──────────────────────────────────────────────
+    cigs = round(aqi / 22, 1)
+    if cigs >= 0.5:
+        cig_font = _font(30)
+        cig_text = f"≈ {cigs} cigarettes/day"
+        draw.text((W // 2, adv_y + 10), cig_text,
+                  font=cig_font, fill="#FF6B6B", anchor="mm",
+                  stroke_width=2, stroke_fill="black")
+
     # ── Subscribe bar ─────────────────────────────────────────────────────
     draw.rectangle([0, H - 75, W, H], fill=(*rgb_color, 230))
     sub_font = _font(28)

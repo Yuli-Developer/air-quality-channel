@@ -33,46 +33,51 @@ Think: if Red Bull wrote news scripts.""",
 SHORTS_SCRIPT_PROMPT = """
 {system_prompt}
 
-Write a YouTube Shorts video package for this weird financial news story.
-CRITICAL: This is Shorts-only. Max 55 seconds. Max 130 words narration. Hook in first 3 words.
+Write a YouTube Shorts video about today's real-time air quality data.
+Make it feel urgent and visceral — bad air is a silent health crisis most people ignore.
+Max 55 seconds. Max 130 words. Hook in first 3 words.
 
-Title: {title}
-Summary: {summary}
-URL: {url}
+AQI Report: {title}
+Data: {summary}
 Narrator style: {style}
+
+HOOK RULE: First sentence MUST contain the AQI number AND a shocking health comparison.
+Example: "AQI 287. That's 13 cigarettes worth of air — in a single day."
+NEVER start with "Today", "So", or "The air quality".
+
+CIGARETTES RULE: Always convert the worst city's AQI to cigarettes-per-day (AQI ÷ 22 = cigarettes).
+Include this comparison in the narration — it's the most shareable fact.
 
 Return ONLY valid JSON (no markdown):
 {{
-  "youtube_title": "<punchy title under 55 chars — curiosity gap, no clickbait>",
-  "hook": "<first sentence, 10 words max, immediate hook>",
-  "narration": "<STRICT max 130 words, {style} tone, structure: 1-sentence hook → 2-sentence setup → twist → 1-line payoff. Every word earns its place. No filler.>",
+  "youtube_title": "<punchy title under 55 chars — include city name + AQI number. e.g. 'Delhi AQI 287 — 13 Cigarettes a Day'>",
+  "hook": "<first sentence, 12 words max — AQI number + cigarettes comparison>",
+  "narration": "<STRICT max 130 words. Structure: AQI shock stat + cigarettes comparison → which cities are worst → health impact → what it means for you. Urgent, visceral, no filler.>",
   "title_variants": [
-    "<title variant 1 — curiosity>",
-    "<title variant 2 — shock>",
-    "<title variant 3 — humor>",
-    "<title variant 4 — ragebait>"
+    "<variant 1 — health impact angle>",
+    "<variant 2 — cigarettes comparison angle>",
+    "<variant 3 — city name + number>",
+    "<variant 4 — 'Is Your City Safe?' curiosity>"
   ],
-  "characters": "<visual description of 1-2 key characters for consistent image generation, include age, clothing, expression>",
+  "characters": "no people, city skyline through smog, landmark silhouettes, pollution haze",
   "scenes": [
     {{
       "scene_number": 1,
-      "narration_segment": "<exact words for this scene, ~30 words>",
-      "storyboard_description": "<VERTICAL 9:16 portrait composition. Subject centered and tall in frame. Close-up or medium shot preferred. Financial news broadcast aesthetic. Describe: subject, action, background, lighting, emotion>",
+      "narration_segment": "<words for this scene, ~30 words>",
+      "storyboard_description": "<VERTICAL 9:16 portrait. Aerial or ground view of city through thick pollution haze. Dramatic smog atmosphere. Famous landmark barely visible through haze.>",
       "motion_effect": "<ken_burns_zoom_in|ken_burns_zoom_out|pan_left|pan_right>",
-      "search_keywords": ["<keyword1>", "<keyword2>"]
+      "search_keywords": ["<city>", "air quality", "pollution"]
     }}
   ],
   "tags": ["<tag1>", "<tag2>", "<tag3>", "<tag4>", "<tag5>", "<tag6>", "<tag7>"],
-  "description_hook": "<2 punchy lines for YouTube description>"
+  "description_hook": "<2 punchy lines — line 1: AQI number + cigarettes, line 2: which city is worst today>"
 }}
 
 Requirements:
 - Exactly 4 scenes
-- Total narration MUST be under 130 words — count carefully
-- Each scene narration ~25-35 words
-- storyboard_description must specify VERTICAL 9:16 portrait framing
-- Tags must include: finance, money, shorts, investing, weirdnews
-- Deadpan underreaction tone — let absurdity speak for itself
+- Total narration MUST be under 130 words
+- MUST include the cigarettes-per-day comparison
+- Tags must include: airquality, aqi, pollution, shorts, environment
 """
 
 SCRIPT_PROMPT = """
