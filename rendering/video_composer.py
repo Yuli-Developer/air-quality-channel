@@ -112,34 +112,44 @@ def compose_shorts(story: dict, shorts_audio_path: str,
     image_paths = story.get("image_paths", [])
     captions    = story.get("shorts_caption_chunks", story.get("caption_chunks", []))
 
-    n_scenes  = max(len(scenes), 1)
-    scene_dur = total_dur / n_scenes
-    logger.info(f"Composing Shorts: {n_scenes} scenes × {scene_dur:.1f}s = {total_dur:.1f}s")
+    n_scenes = max(len(scenes), 1)
+
+    # Per-scene duration proportional to narration word count so image and
+    # audio stay in sync (worst city gets more words → more screen time)
+    word_counts = [max(len(scene.get("narration_segment", "").split()), 1)
+                   for scene in scenes]
+    total_words = sum(word_counts)
+    scene_durs  = [total_dur * (wc / total_words) for wc in word_counts]
+
+    logger.info(f"Composing Shorts: {n_scenes} scenes, total {total_dur:.1f}s "
+                f"(word-proportional durations)")
 
     # Cycle through 4 gentle effects
     EFFECTS = ["zoom_in", "zoom_out", "pan_right", "pan_left"]
 
-    clips = []
+    clips       = []
+    scene_start = 0.0
     for i, scene in enumerate(scenes):
-        idx    = scene.get("scene_number", i + 1) - 1
-        effect = EFFECTS[i % len(EFFECTS)]
+        idx       = scene.get("scene_number", i + 1) - 1
+        effect    = EFFECTS[i % len(EFFECTS)]
+        dur       = scene_durs[i]
 
         if idx < len(image_paths) and os.path.exists(image_paths[idx]):
-            clip = _ken_burns(image_paths[idx], scene_dur, effect)
-            logger.info(f"  Scene {i+1}: {scene.get('city')} [{effect}]")
+            clip = _ken_burns(image_paths[idx], dur, effect)
+            logger.info(f"  Scene {i+1}: {scene.get('city')} [{effect}] {dur:.1f}s")
         else:
             # Plain coloured fallback
             color = _hex_rgb(scene.get("color", "#222222"))
             clip  = ImageClip(
                 np.full((SH, SW, 3), color, dtype=np.uint8),
-                duration=scene_dur
+                duration=dur
             ).with_fps(FPS)
             logger.warning(f"  Scene {i+1}: fallback color card")
 
-        # Add captions
-        scene_start = i * scene_dur
-        clip = _add_captions(clip, captions, scene_start, scene_dur)
+        # Add captions using absolute audio timestamp
+        clip = _add_captions(clip, captions, scene_start, dur)
         clips.append(clip)
+        scene_start += dur
 
     video = concatenate_videoclips(clips, method="compose")
 

@@ -216,18 +216,28 @@ def build_daily_report(cities: list[dict]) -> dict:
         f"10 cities ranked worst to cleanest today."
     )
 
-    lines = [
-        f"Today's world air quality report — {date_str}.",
-        f"Number one most polluted: {worst['city']}, AQI {worst['aqi']} — {worst['category']}. {worst['advice']}",
-    ]
+    # Build one narration_segment per scene so word-count-proportional
+    # video timing keeps image and audio perfectly in sync.
+    scene_segs = []
+    # Scene 1 — intro + worst city (most words)
+    scene_segs.append(
+        f"Today's world air quality report — {date_str}. "
+        f"Number one most polluted: {worst['city']}, AQI {worst['aqi']} — {worst['category']}. "
+        f"{worst['advice']}"
+    )
+    # Scenes 2-7 — remaining top cities
     for i, c in enumerate(top7[1:], 2):
-        lines.append(f"Number {i}: {c['city']}, AQI {c['aqi']} — {c['category']}.")
+        scene_segs.append(f"Number {i}: {c['city']}, AQI {c['aqi']} — {c['category']}.")
+    # Scenes 8-10 — cleanest cities
     if bottom3:
-        lines.append("And the cleanest air today:")
-        for c in bottom3:
-            lines.append(f"{c['city']}: AQI {c['aqi']} — {c['category']}.")
-    lines.append("Follow for daily rankings. Stay safe out there.")
-    narration = " ".join(lines)
+        scene_segs.append(f"And the cleanest air today — {bottom3[0]['city']}, AQI {bottom3[0]['aqi']}.")
+        for c in bottom3[1:]:
+            scene_segs.append(f"{c['city']}: AQI {c['aqi']} — {c['category']}.")
+    # Outro appended to last scene
+    if scene_segs:
+        scene_segs[-1] += " Follow for daily rankings. Stay safe out there."
+
+    narration = " ".join(scene_segs)
 
     scenes = []
     for i, c in enumerate(featured, 1):
@@ -237,11 +247,12 @@ def build_daily_report(cities: list[dict]) -> dict:
             "aqi":     c["aqi"],
             "category": c["category"],
             "color":   c["color"],
+            "advice":  c.get("advice", ""),
             "storyboard_description": (
                 f"city skyline of {c['city']} with {_sky_desc(c['aqi'])} sky, "
                 f"dramatic atmosphere, urban landscape"
             ),
-            "narration_segment": f"{c['city']}: AQI {c['aqi']} — {c['category']}.",
+            "narration_segment": scene_segs[i - 1] if i - 1 < len(scene_segs) else f"{c['city']}: AQI {c['aqi']}.",
         })
 
     city_names = [c["city"] for c in featured]
