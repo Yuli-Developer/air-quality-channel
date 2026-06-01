@@ -9,7 +9,7 @@ import time
 import logging
 import urllib.parse
 import requests
-from config.settings import IMAGES_DIR, SHORTS_WIDTH, SHORTS_HEIGHT
+from config.settings import IMAGES_DIR, SHORTS_WIDTH, SHORTS_HEIGHT, IMAGE_TIER, GEMINI_API_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +176,33 @@ def _build_aqi_prompt(scene: dict) -> str:
     )
 
 
+def _imagen4_generate(prompt: str, path: str) -> bool:
+    try:
+        from google import genai
+        from google.genai import types
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        response = client.models.generate_images(
+            model="imagen-4.0-fast-generate-001",
+            prompt=prompt,
+            config=types.GenerateImagesConfig(
+                number_of_images=1,
+                aspect_ratio="9:16",
+                person_generation="dont_allow",
+            ),
+        )
+        images = response.generated_images or []
+        for generated_image in images:
+            with open(path, "wb") as f:
+                f.write(generated_image.image.image_bytes)
+            logger.info(f"Imagen 4: saved {path}")
+            return True
+        logger.warning("Imagen 4: no images returned (content filtered)")
+        return False
+    except Exception as e:
+        logger.warning(f"Imagen 4 failed: {e}")
+        return False
+
+
 def _pollinations_generate(prompt: str, path: str, width: int, height: int, seed: int) -> bool:
     encoded  = urllib.parse.quote(prompt)
     negative = urllib.parse.quote(AQI_NEGATIVE)
@@ -224,7 +251,11 @@ def generate_scene_image(scene: dict, run_id: str,
     style_name = "satellite" if scene_num % 2 == 1 else "documentary"
     logger.info(f"Scene {scene_num} [{style_name}]: {scene.get('city')} AQI {scene.get('aqi')}")
 
-    success = _pollinations_generate(prompt, path, width, height, seed)
+    success = False
+    if IMAGE_TIER in ("imagen4", "imagen3"):
+        success = _imagen4_generate(prompt, path)
+    if not success:
+        success = _pollinations_generate(prompt, path, width, height, seed)
     if not success:
         _fallback_card(path, scene, width, height)
     return path
@@ -240,7 +271,7 @@ def generate_all_images(story: dict, run_id: str,
         scene["date"] = story.get("date", "")
         render_aqi_card(bg_path, scene, card_out)
         image_paths.append(card_out)
-        time.sleep(35)
+        time.sleep(5 if IMAGE_TIER in ("imagen4", "imagen3") else 35)
     story["image_paths"] = image_paths
     logger.info(f"Generated {len(image_paths)} AQI scene images")
     return image_paths
