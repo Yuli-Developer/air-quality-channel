@@ -15,6 +15,87 @@ logger = logging.getLogger(__name__)
 
 W, H = SHORTS_WIDTH, SHORTS_HEIGHT   # 1080 x 1920
 
+# Famous landmarks per city — injected into image prompts for visual identity
+CITY_LANDMARKS = {
+    # India
+    "delhi":         "Taj Mahal silhouette",
+    "new delhi":     "India Gate monument",
+    "mumbai":        "Gateway of India arch",
+    "kolkata":       "Victoria Memorial dome",
+    "chennai":       "Marina Beach lighthouse",
+    "bangalore":     "Vidhana Soudha palace",
+    "bengaluru":     "Vidhana Soudha palace",
+    "hyderabad":     "Charminar monument",
+    "ahmedabad":     "Sabarmati Ashram",
+    "pune":          "Shaniwar Wada fort",
+    "lucknow":       "Bara Imambara",
+    "jaipur":        "Hawa Mahal pink palace",
+    "agra":          "Taj Mahal",
+    # China
+    "beijing":       "Forbidden City palace complex",
+    "shanghai":      "Oriental Pearl Tower",
+    "guangzhou":     "Canton Tower",
+    "chengdu":       "Tianfu Square",
+    "shenzhen":      "Ping An Finance Centre skyscraper",
+    # Europe
+    "paris":         "Eiffel Tower",
+    "london":        "Big Ben and Tower Bridge",
+    "rome":          "Colosseum",
+    "barcelona":     "Sagrada Familia cathedral",
+    "berlin":        "Brandenburg Gate",
+    "madrid":        "Royal Palace of Madrid",
+    "amsterdam":     "Anne Frank House canal",
+    "prague":        "Charles Bridge",
+    "vienna":        "Schönbrunn Palace",
+    "athens":        "Parthenon on Acropolis",
+    "istanbul":      "Hagia Sophia",
+    "moscow":        "Saint Basil's Cathedral",
+    # Middle East
+    "dubai":         "Burj Khalifa skyscraper",
+    "abu dhabi":     "Sheikh Zayed Grand Mosque",
+    "riyadh":        "Kingdom Centre Tower",
+    "cairo":         "Pyramids of Giza",
+    "tehran":        "Azadi Tower",
+    # Asia-Pacific
+    "tokyo":         "Mount Fuji with Tokyo skyline",
+    "osaka":         "Osaka Castle",
+    "seoul":         "Gyeongbokgung Palace",
+    "beijing":       "Great Wall of China",
+    "bangkok":       "Wat Arun temple spire",
+    "singapore":     "Marina Bay Sands",
+    "hong kong":     "Victoria Harbour skyline",
+    "taipei":        "Taipei 101 tower",
+    "kuala lumpur":  "Petronas Twin Towers",
+    "jakarta":       "Monas National Monument",
+    "kathmandu":     "Boudhanath Stupa",
+    "dhaka":         "Lalbagh Fort",
+    "karachi":       "Quaid's Mausoleum",
+    "lahore":        "Badshahi Mosque",
+    # Americas
+    "new york":      "Statue of Liberty and Manhattan skyline",
+    "los angeles":   "Hollywood Sign on hills",
+    "chicago":       "Cloud Gate bean sculpture",
+    "san francisco": "Golden Gate Bridge",
+    "toronto":       "CN Tower",
+    "mexico city":   "Angel of Independence",
+    "rio de janeiro":"Christ the Redeemer statue",
+    "sao paulo":     "Paulista Avenue skyline",
+    "buenos aires":  "Casa Rosada pink palace",
+    # Africa
+    "cape town":     "Table Mountain",
+    "nairobi":       "Kenyatta International Conference Centre",
+    "lagos":         "Lekki-Ikoyi Link Bridge",
+    # Australia
+    "sydney":        "Sydney Opera House and Harbour Bridge",
+    "melbourne":     "Flinders Street Station",
+}
+
+
+def _get_landmark(city: str) -> str:
+    """Return landmark for city, or empty string if unknown."""
+    return CITY_LANDMARKS.get(city.lower().strip(), "")
+
+
 AQI_NEGATIVE = (
     "cartoon, anime, painting, illustration, people faces, human face, portrait, "
     "text, watermark, logo, low quality, blurry, distorted, ugly, bad anatomy"
@@ -55,19 +136,26 @@ DOCUMENTARY_BASE = (
 
 
 def _build_aqi_prompt(scene: dict) -> str:
-    city     = scene.get("city", "city")
-    category = scene.get("category", "Moderate")
-    sky      = _SKY_STYLE.get(category, "hazy sky")
-    aqi      = scene.get("aqi", 100)
+    city      = scene.get("city", "city")
+    category  = scene.get("category", "Moderate")
+    sky       = _SKY_STYLE.get(category, "hazy sky")
+    aqi       = scene.get("aqi", 100)
     scene_num = scene.get("scene_number", 1)
+    landmark  = _get_landmark(city)
+
+    # Landmark context — feature the famous landmark prominently when known
+    if landmark:
+        landmark_note = f"featuring {landmark} as the iconic focal point, recognizable landmark of {city}, "
+    else:
+        landmark_note = f"iconic {city} skyline and architecture, "
 
     # Alternate styles: odd = satellite, even = documentary
     if scene_num % 2 == 1:
         base = SATELLITE_BASE
-        style_note = f"satellite view over {city}, {sky}, thick pollution haze visible from above"
+        style_note = f"satellite view over {city}, {sky}, thick pollution haze visible from above, {landmark_note}"
     else:
         base = DOCUMENTARY_BASE
-        style_note = f"street scene of {city}, {sky}, dramatic pollution atmosphere"
+        style_note = f"street scene of {city}, {sky}, dramatic pollution atmosphere, {landmark_note}"
 
     # Extra drama for high AQI
     if aqi > 200:
