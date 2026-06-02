@@ -5,16 +5,19 @@ Supports main video (landscape) and Shorts (vertical).
 
 import re
 import os
+import wave
+import base64
 import asyncio
 import logging
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from moviepy import AudioFileClip
-from config.settings import AUDIO_DIR, SHORTS_WIDTH as W, SHORTS_HEIGHT as H
+from config.settings import AUDIO_DIR, SHORTS_WIDTH as W, SHORTS_HEIGHT as H, GEMINI_API_KEY, GEMINI_TTS_MODEL
 
 logger = logging.getLogger(__name__)
 
-VOICE = "en-GB-RyanNeural"
+VOICE_EDGE   = "en-GB-RyanNeural"
+VOICE_GEMINI = "Zephyr"              # Gemini TTS — bright, clean, clear
 CAPTION_Y_RATIO = 0.80      # vertical position of captions
 FONT_SIZE       = 80
 GAP             = 24
@@ -35,11 +38,54 @@ def _font(size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default()
 
 
-# ── TTS ────────────────────────────────────────────────────────────────────
+# ── Gemini TTS ─────────────────────────────────────────────────────────────
+
+def _generate_gemini_tts(text: str, wav_path: str) -> bool:
+    try:
+        from google import genai
+        from google.genai import types
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        response = client.models.generate_content(
+            model=GEMINI_TTS_MODEL,
+            contents=text,
+            config=types.GenerateContentConfig(
+                response_modalities=["AUDIO"],
+                speech_config=types.SpeechConfig(
+                    voice_config=types.VoiceConfig(
+                        prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                            voice_name=VOICE_GEMINI,
+                        )
+                    )
+                ),
+            ),
+        )
+        part = response.candidates[0].content.parts[0]
+        audio_data = part.inline_data.data
+        if isinstance(audio_data, str):
+            pcm_bytes = base64.b64decode(audio_data)
+        else:
+            pcm_bytes = audio_data
+        with wave.open(wav_path, "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(24000)
+            wf.writeframes(pcm_bytes)
+        size = os.path.getsize(wav_path)
+        if size < 1000:
+            logger.warning(f"Gemini TTS output too small: {size} bytes")
+            return False
+        logger.info(f"Gemini TTS: saved {wav_path} ({size//1024}KB)")
+        return True
+    except Exception as e:
+        logger.warning(f"Gemini TTS failed: {e}")
+        return False
+
+
+# ── Edge TTS fallback ──────────────────────────────────────────────────────
 
 async def _tts_async(text: str, audio_path: str):
     import edge_tts
-    comm = edge_tts.Communicate(text, voice=VOICE)
+    comm = edge_tts.Communicate(text, voice=VOICE_EDGE)
     with open(audio_path, "wb") as f:
         async for chunk in comm.stream():
             if chunk["type"] == "audio":
@@ -48,10 +94,14 @@ async def _tts_async(text: str, audio_path: str):
 
 def generate_voiceover(narration: str, run_id: str, suffix: str = "") -> str:
     os.makedirs(AUDIO_DIR, exist_ok=True)
-    path = os.path.join(AUDIO_DIR, f"{run_id}_narration{suffix}.mp3")
+    wav_path = os.path.join(AUDIO_DIR, f"{run_id}_narration{suffix}.wav")
+    mp3_path = os.path.join(AUDIO_DIR, f"{run_id}_narration{suffix}.mp3")
     logger.info(f"Generating voiceover{suffix}...")
-    asyncio.run(_tts_async(narration, path))
-    return path
+    if _generate_gemini_tts(narration, wav_path):
+        return wav_path
+    logger.info("Falling back to Edge TTS")
+    asyncio.run(_tts_async(narration, mp3_path))
+    return mp3_path
 
 
 # ── Word Timings ───────────────────────────────────────────────────────────

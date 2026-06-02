@@ -11,6 +11,7 @@ load_dotenv()
 # ── AI ──────────────────────────────────────────────────────────────────────
 GEMINI_API_KEY        = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL          = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_TTS_MODEL      = os.getenv("GEMINI_TTS_MODEL", "gemini-2.5-flash-preview-tts")
 
 # ── Air Quality APIs ───────────────────────────────────────────────────
 GOOGLE_AQI_API_KEY    = os.getenv("GOOGLE_AQI_API_KEY", "")      # same Google project key
