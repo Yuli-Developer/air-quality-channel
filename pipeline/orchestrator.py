@@ -20,7 +20,7 @@ from storage.database              import init_db, save_run, update_run
 logger = logging.getLogger(__name__)
 
 
-def _cleanup_old_output(keep_days: int = 2) -> None:
+def _cleanup_old_output(keep_days: int = 1) -> None:
     """Delete output files older than keep_days after successful upload."""
     cutoff = time.time() - keep_days * 86400
     removed = 0
