@@ -7,8 +7,6 @@ Alternates per scene: odd scenes = satellite view, even scenes = ground document
 import os
 import time
 import logging
-import urllib.parse
-import requests
 from config.settings import IMAGES_DIR, SHORTS_WIDTH, SHORTS_HEIGHT, IMAGE_TIER, GEMINI_API_KEY
 
 logger = logging.getLogger(__name__)
@@ -254,8 +252,6 @@ def generate_scene_image(scene: dict, run_id: str,
     success = False
     if IMAGE_TIER in ("imagen4", "imagen3"):
         success = _imagen4_generate(prompt, path)
-    if not success:
-        success = _pollinations_generate(prompt, path, width, height, seed)
     if not success:
         _fallback_card(path, scene, width, height)
     return path
